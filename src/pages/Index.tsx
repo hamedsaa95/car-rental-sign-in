@@ -1,15 +1,33 @@
 import { useState } from "react";
 import LoginForm from "@/components/LoginForm";
 import AdminDashboard from "@/components/AdminDashboard";
+import UserDashboard from "@/components/UserDashboard";
+
+interface User {
+  username: string;
+  userType: 'admin' | 'user';
+  searchLimit?: number;
+  remainingSearches?: number;
+}
 
 const Index = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const handleLogin = () => {
-    setIsLoggedIn(true);
+  const handleLogin = (user: User) => {
+    setCurrentUser(user);
   };
 
-  return isLoggedIn ? <AdminDashboard /> : <LoginForm onLogin={handleLogin} />;
+  const handleLogout = () => {
+    setCurrentUser(null);
+  };
+
+  if (!currentUser) {
+    return <LoginForm onLogin={handleLogin} />;
+  }
+
+  return currentUser.userType === 'admin' ? 
+    <AdminDashboard onLogout={handleLogout} /> : 
+    <UserDashboard user={currentUser} onLogout={handleLogout} />;
 };
 
 export default Index;

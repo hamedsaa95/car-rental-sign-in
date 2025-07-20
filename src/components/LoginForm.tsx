@@ -7,8 +7,15 @@ import { Eye, EyeOff, Lock, User } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
 import { useToast } from "@/hooks/use-toast";
 
+interface User {
+  username: string;
+  userType: 'admin' | 'user';
+  searchLimit?: number;
+  remainingSearches?: number;
+}
+
 interface LoginFormProps {
-  onLogin: () => void;
+  onLogin: (user: User) => void;
 }
 
 const LoginForm = ({ onLogin }: LoginFormProps) => {
@@ -19,16 +26,32 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
   });
   const { toast } = useToast();
 
+  // قاعدة بيانات المستخدمين المؤقتة
+  const [users] = useState<(User & { password: string })[]>([
+    { 
+      username: "admin", 
+      password: "5971", 
+      userType: "admin"
+    }
+  ]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // التحقق من بيانات تسجيل الدخول
-    if (formData.username === "admin" && formData.password === "5971") {
+    // البحث عن المستخدم في قاعدة البيانات
+    const user = users.find(u => 
+      u.username === formData.username && 
+      u.password === formData.password
+    );
+
+    if (user) {
       toast({
         title: "تم تسجيل الدخول بنجاح",
-        description: "مرحباً بك في نظام الإدارة"
+        description: `مرحباً بك ${user.userType === 'admin' ? 'في نظام الإدارة' : 'في النظام'}`
       });
-      onLogin();
+      
+      const { password, ...userWithoutPassword } = user;
+      onLogin(userWithoutPassword);
     } else {
       toast({
         title: "خطأ في تسجيل الدخول",

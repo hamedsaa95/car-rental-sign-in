@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Plus, User, AlertCircle, CheckCircle, UserPlus } from "lucide-react";
+import { Search, Plus, AlertCircle, CheckCircle, User as UserIcon } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
 import { useToast } from "@/hooks/use-toast";
 
@@ -13,45 +13,47 @@ interface BlockedUser {
   reason: string;
 }
 
-interface UserAccount {
+interface User {
   username: string;
-  password: string;
-  searchLimit: number;
-  remainingSearches: number;
+  userType: 'admin' | 'user';
+  searchLimit?: number;
+  remainingSearches?: number;
 }
 
-interface AdminDashboardProps {
+interface UserDashboardProps {
+  user: User;
   onLogout: () => void;
 }
 
-const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
+const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
   const [searchId, setSearchId] = useState("");
   const [searchResult, setSearchResult] = useState<BlockedUser | null | "not_found">(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [showCreateUserForm, setShowCreateUserForm] = useState(false);
   const [newBlock, setNewBlock] = useState({
     id: "",
     name: "",
     reason: ""
   });
-  const [newUser, setNewUser] = useState({
-    username: "",
-    password: "",
-    searchLimit: 10
-  });
+  const [remainingSearches, setRemainingSearches] = useState(user.remainingSearches || 0);
   const { toast } = useToast();
 
-  // بيانات تجريبية للمحظورين
+  // بيانات تجريبية للمحظورين (نفس البيانات)
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([
     { id: "123456789012", name: "أحمد محمد علي", reason: "مخالفة شروط الاستخدام" },
     { id: "987654321098", name: "فاطمة حسن أحمد", reason: "عدم إرجاع السيارة في الوقت المحدد" },
     { id: "456789123456", name: "محمد عبدالله سالم", reason: "أضرار بالسيارة" }
   ]);
 
-  // حسابات المستخدمين
-  const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
-
   const handleSearch = () => {
+    if (remainingSearches <= 0) {
+      toast({
+        title: "تم استنفاد البحثات",
+        description: "لا توجد بحثات متبقية",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (searchId.length !== 12) {
       toast({
         title: "خطأ في البحث",
@@ -72,6 +74,7 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
 
     const found = blockedUsers.find(user => user.id === searchId);
     setSearchResult(found || "not_found");
+    setRemainingSearches(prev => prev - 1);
   };
 
   const handleAddBlock = () => {
@@ -116,43 +119,12 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     setNewBlock({ id: "", name: "", reason: "" });
     setShowAddForm(false);
     
-    toast({
-      title: "تم بنجاح",
-      description: "تم إضافة البلوك الجديد بنجاح"
-    });
-  };
-
-  const handleCreateUser = () => {
-    if (!newUser.username.trim() || !newUser.password.trim()) {
-      toast({
-        title: "خطأ",
-        description: "يرجى ملء جميع الحقول",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (userAccounts.find(user => user.username === newUser.username)) {
-      toast({
-        title: "خطأ",
-        description: "اسم المستخدم موجود مسبقاً",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const account: UserAccount = {
-      ...newUser,
-      remainingSearches: newUser.searchLimit
-    };
-
-    setUserAccounts([...userAccounts, account]);
-    setNewUser({ username: "", password: "", searchLimit: 10 });
-    setShowCreateUserForm(false);
+    // إضافة 5 بحثات عند الإضافة الناجحة
+    setRemainingSearches(prev => prev + 5);
     
     toast({
       title: "تم بنجاح",
-      description: "تم إنشاء الحساب بنجاح"
+      description: "تم إضافة البلوك الجديد وحصلت على 5 بحثات إضافية"
     });
   };
 
@@ -163,7 +135,12 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
         <div className="flex justify-between items-center mb-8">
           <CarRentalLogo size="md" />
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">مرحباً، المدير</span>
+            <div className="text-center">
+              <span className="text-sm text-muted-foreground">مرحباً، {user.username}</span>
+              <div className="text-xs text-primary font-medium">
+                البحثات المتبقية: {remainingSearches}
+              </div>
+            </div>
             <Button onClick={onLogout} variant="outline" size="sm">
               تسجيل الخروج
             </Button>
@@ -201,7 +178,7 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
               </div>
               <Button 
                 onClick={handleSearch}
-                disabled={searchId.length !== 12}
+                disabled={searchId.length !== 12 || remainingSearches <= 0}
                 className="bg-gradient-to-r from-primary to-primary-glow"
               >
                 بحث
@@ -234,83 +211,8 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
           </CardContent>
         </Card>
 
-        {/* إنشاء حساب جديد */}
-        <Card className="mb-6 bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <UserPlus className="h-5 w-5" />
-                  إنشاء حساب مستخدم جديد
-                </CardTitle>
-                <CardDescription>
-                  إنشاء حساب جديد للبحث والإضافة مع حد معين للبحثات
-                </CardDescription>
-              </div>
-              <Button 
-                onClick={() => setShowCreateUserForm(!showCreateUserForm)}
-                variant="outline"
-                size="sm"
-              >
-                {showCreateUserForm ? "إغلاق" : "إنشاء حساب"}
-              </Button>
-            </div>
-          </CardHeader>
-          
-          {showCreateUserForm && (
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="newUsername">اسم المستخدم</Label>
-                  <Input
-                    id="newUsername"
-                    type="text"
-                    placeholder="ادخل اسم المستخدم"
-                    value={newUser.username}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, username: e.target.value }))}
-                    className="text-right"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="newPassword">كلمة المرور</Label>
-                  <Input
-                    id="newPassword"
-                    type="text"
-                    placeholder="ادخل كلمة المرور"
-                    value={newUser.password}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
-                    className="text-right"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="searchLimit">حد البحثات</Label>
-                  <Input
-                    id="searchLimit"
-                    type="number"
-                    placeholder="عدد البحثات المسموحة"
-                    value={newUser.searchLimit}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, searchLimit: parseInt(e.target.value) || 0 }))}
-                    className="text-right"
-                    min="1"
-                  />
-                </div>
-
-                <Button 
-                  onClick={handleCreateUser}
-                  className="w-full bg-gradient-to-r from-primary to-primary-glow"
-                  disabled={!newUser.username || !newUser.password || newUser.searchLimit < 1}
-                >
-                  إنشاء الحساب
-                </Button>
-              </div>
-            </CardContent>
-          )}
-        </Card>
-
         {/* إضافة بلوك جديد */}
-        <Card className="mb-6 bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
+        <Card className="bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
@@ -319,7 +221,7 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                   إضافة بلوك جديد
                 </CardTitle>
                 <CardDescription>
-                  إضافة رقم تعريفي جديد إلى قائمة المحظورين
+                  إضافة رقم تعريفي جديد إلى قائمة المحظورين (يمنحك 5 بحثات إضافية)
                 </CardDescription>
               </div>
               <Button 
@@ -383,76 +285,15 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                   className="w-full bg-gradient-to-r from-primary to-primary-glow"
                   disabled={!newBlock.id || !newBlock.name || !newBlock.reason}
                 >
-                  إضافة البلوك
+                  إضافة البلوك (+5 بحثات)
                 </Button>
               </div>
             </CardContent>
           )}
-        </Card>
-
-        {/* حسابات المستخدمين */}
-        <Card className="mb-6 bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              الحسابات المنشأة ({userAccounts.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {userAccounts.map((user, index) => (
-                <div key={index} className="p-3 bg-muted/30 rounded-lg border">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                      <p className="font-medium">{user.username}</p>
-                      <p className="text-sm text-muted-foreground">
-                        البحثات المتبقية: {user.remainingSearches}/{user.searchLimit}
-                      </p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      كلمة المرور: {user.password}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              {userAccounts.length === 0 && (
-                <p className="text-center text-muted-foreground py-4">
-                  لا توجد حسابات منشأة
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* قائمة المحظورين الحالية */}
-        <Card className="bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              قائمة المحظورين ({blockedUsers.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {blockedUsers.map((user) => (
-                <div key={user.id} className="p-3 bg-muted/30 rounded-lg border">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">{user.reason}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground font-mono">
-                      {user.id}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
         </Card>
       </div>
     </div>
   );
 };
 
-export default AdminDashboard;
+export default UserDashboard;
