@@ -5,18 +5,37 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
+import { useToast } from "@/hooks/use-toast";
 
-const LoginForm = () => {
+interface LoginFormProps {
+  onLogin: () => void;
+}
+
+const LoginForm = ({ onLogin }: LoginFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     password: ""
   });
+  const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login attempt:", formData);
-    // هنا يمكنك إضافة منطق تسجيل الدخول
+    
+    // التحقق من بيانات تسجيل الدخول
+    if (formData.username === "admin" && formData.password === "5971") {
+      toast({
+        title: "تم تسجيل الدخول بنجاح",
+        description: "مرحباً بك في نظام الإدارة"
+      });
+      onLogin();
+    } else {
+      toast({
+        title: "خطأ في تسجيل الدخول",
+        description: "اسم المستخدم أو كلمة المرور غير صحيحة",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
