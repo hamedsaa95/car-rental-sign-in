@@ -6,8 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
 import { useToast } from "@/hooks/use-toast";
+import { useSupabase } from "@/hooks/useSupabase";
 
 interface User {
+  id?: string;
   username: string;
   userType: 'admin' | 'user';
   searchLimit?: number;
@@ -20,44 +22,41 @@ interface LoginFormProps {
 
 const LoginForm = ({ onLogin }: LoginFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     password: ""
   });
   const { toast } = useToast();
+  const { login } = useSupabase();
 
-  // قاعدة بيانات المستخدمين المؤقتة
-  const [users] = useState<(User & { password: string })[]>([
-    { 
-      username: "admin", 
-      password: "5971", 
-      userType: "admin"
-    }
-  ]);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    // البحث عن المستخدم في قاعدة البيانات
-    const user = users.find(u => 
-      u.username === formData.username && 
-      u.password === formData.password
-    );
-
-    if (user) {
+    try {
+      const user = await login(formData.username, formData.password);
+      
       toast({
         title: "تم تسجيل الدخول بنجاح",
-        description: `مرحباً بك ${user.userType === 'admin' ? 'في نظام الإدارة' : 'في النظام'}`
+        description: `مرحباً بك ${user.user_type === 'admin' ? 'في نظام الإدارة' : 'في النظام'}`
       });
       
-      const { password, ...userWithoutPassword } = user;
-      onLogin(userWithoutPassword);
-    } else {
+      onLogin({
+        id: user.id,
+        username: user.username,
+        userType: user.user_type,
+        searchLimit: user.search_limit,
+        remainingSearches: user.remaining_searches
+      });
+    } catch (error: any) {
       toast({
         title: "خطأ في تسجيل الدخول",
-        description: "اسم المستخدم أو كلمة المرور غير صحيحة",
+        description: error.message,
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -139,9 +138,10 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
               {/* زر تسجيل الدخول */}
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-primary to-primary-glow hover:from-primary/90 hover:to-primary-glow/90 text-primary-foreground font-medium py-3 shadow-glow transition-all duration-300 hover:shadow-lg"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-primary to-primary-glow hover:from-primary/90 hover:to-primary-glow/90 text-primary-foreground font-medium py-3 shadow-glow transition-all duration-300 hover:shadow-lg disabled:opacity-50"
               >
-                تسجيل الدخول
+                {isLoading ? "جارٍ تسجيل الدخول..." : "تسجيل الدخول"}
               </Button>
 
               {/* رابط نسيت كلمة المرور */}

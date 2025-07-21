@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import LoginForm from "@/components/LoginForm";
 import AdminDashboard from "@/components/AdminDashboard";
 import UserDashboard from "@/components/UserDashboard";
+import { initializeData } from "@/lib/initData";
 
 interface User {
   username: string;
@@ -12,6 +13,11 @@ interface User {
 
 const Index = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  // تهيئة البيانات الأولية
+  useEffect(() => {
+    initializeData();
+  }, []);
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);

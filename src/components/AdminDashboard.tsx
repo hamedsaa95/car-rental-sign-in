@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Search, Plus, User, AlertCircle, CheckCircle, UserPlus } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
 import { useToast } from "@/hooks/use-toast";
+import { useSupabase } from "@/hooks/useSupabase";
 
 interface BlockedUser {
   id: string;
@@ -39,19 +40,41 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     password: "",
     searchLimit: 10
   });
+  const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
+  const [userAccounts, setUserAccounts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
   const { toast } = useToast();
+  const { 
+    searchBlockedUser, 
+    addBlockedUser, 
+    getBlockedUsers, 
+    createUser, 
+    getUsers 
+  } = useSupabase();
 
-  // بيانات تجريبية للمحظورين
-  const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([
-    { id: "123456789012", name: "أحمد محمد علي", reason: "مخالفة شروط الاستخدام" },
-    { id: "987654321098", name: "فاطمة حسن أحمد", reason: "عدم إرجاع السيارة في الوقت المحدد" },
-    { id: "456789123456", name: "محمد عبدالله سالم", reason: "أضرار بالسيارة" }
-  ]);
+  // تحميل البيانات عند بدء التشغيل
+  useEffect(() => {
+    loadData();
+  }, []);
 
-  // حسابات المستخدمين
-  const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [blockedData, usersData] = await Promise.all([
+        getBlockedUsers(),
+        getUsers()
+      ]);
+      setBlockedUsers(blockedData);
+      setUserAccounts(usersData.filter(user => user.user_type === 'user'));
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (searchId.length !== 12) {
       toast({
         title: "خطأ في البحث",
@@ -70,11 +93,30 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
       return;
     }
 
-    const found = blockedUsers.find(user => user.id === searchId);
-    setSearchResult(found || "not_found");
+    setIsLoading(true);
+    try {
+      const found = await searchBlockedUser(searchId);
+      if (found) {
+        setSearchResult({
+          id: found.user_id,
+          name: found.name,
+          reason: found.reason
+        });
+      } else {
+        setSearchResult("not_found");
+      }
+    } catch (error) {
+      toast({
+        title: "خطأ في البحث",
+        description: "حدث خطأ أثناء البحث",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAddBlock = () => {
+  const handleAddBlock = async () => {
     if (newBlock.id.length !== 12) {
       toast({
         title: "خطأ",
@@ -103,7 +145,7 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     }
 
     // التحقق من عدم وجود الرقم مسبقاً
-    if (blockedUsers.find(user => user.id === newBlock.id)) {
+    if (blockedUsers.find(user => user.user_id === newBlock.id)) {
       toast({
         title: "خطأ",
         description: "هذا الرقم التعريفي موجود مسبقاً",
@@ -112,17 +154,26 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
       return;
     }
 
-    setBlockedUsers([...blockedUsers, newBlock]);
-    setNewBlock({ id: "", name: "", reason: "" });
-    setShowAddForm(false);
-    
-    toast({
-      title: "تم بنجاح",
-      description: "تم إضافة البلوك الجديد بنجاح"
-    });
+    setIsLoading(true);
+    try {
+      await addBlockedUser({
+        user_id: newBlock.id,
+        name: newBlock.name,
+        reason: newBlock.reason,
+        created_by: 'admin'
+      });
+
+      setNewBlock({ id: "", name: "", reason: "" });
+      setShowAddForm(false);
+      await loadData(); // إعادة تحميل البيانات
+    } catch (error) {
+      // الخطأ يتم التعامل معه في useSupabase
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleCreateUser = () => {
+  const handleCreateUser = async () => {
     if (!newUser.username.trim() || !newUser.password.trim()) {
       toast({
         title: "خطأ",
@@ -141,19 +192,24 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
       return;
     }
 
-    const account: UserAccount = {
-      ...newUser,
-      remainingSearches: newUser.searchLimit
-    };
+    setIsLoading(true);
+    try {
+      await createUser({
+        username: newUser.username,
+        password: newUser.password,
+        user_type: 'user',
+        search_limit: newUser.searchLimit,
+        remaining_searches: newUser.searchLimit
+      });
 
-    setUserAccounts([...userAccounts, account]);
-    setNewUser({ username: "", password: "", searchLimit: 10 });
-    setShowCreateUserForm(false);
-    
-    toast({
-      title: "تم بنجاح",
-      description: "تم إنشاء الحساب بنجاح"
-    });
+      setNewUser({ username: "", password: "", searchLimit: 10 });
+      setShowCreateUserForm(false);
+      await loadData(); // إعادة تحميل البيانات
+    } catch (error) {
+      // الخطأ يتم التعامل معه في useSupabase
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -201,10 +257,10 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
               </div>
               <Button 
                 onClick={handleSearch}
-                disabled={searchId.length !== 12}
+                disabled={searchId.length !== 12 || isLoading}
                 className="bg-gradient-to-r from-primary to-primary-glow"
               >
-                بحث
+                {isLoading ? "جارٍ البحث..." : "بحث"}
               </Button>
             </div>
 
@@ -403,12 +459,12 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
               {userAccounts.map((user, index) => (
                 <div key={index} className="p-3 bg-muted/30 rounded-lg border">
                   <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                      <p className="font-medium">{user.username}</p>
-                      <p className="text-sm text-muted-foreground">
-                        البحثات المتبقية: {user.remainingSearches}/{user.searchLimit}
-                      </p>
-                    </div>
+                     <div className="space-y-1">
+                       <p className="font-medium">{user.username}</p>
+                       <p className="text-sm text-muted-foreground">
+                         البحثات المتبقية: {user.remaining_searches}/{user.search_limit}
+                       </p>
+                     </div>
                     <span className="text-xs text-muted-foreground">
                       كلمة المرور: {user.password}
                     </span>
@@ -434,19 +490,19 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {blockedUsers.map((user) => (
-                <div key={user.id} className="p-3 bg-muted/30 rounded-lg border">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">{user.reason}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground font-mono">
-                      {user.id}
-                    </span>
-                  </div>
-                </div>
-              ))}
+               {blockedUsers.map((user) => (
+                 <div key={user.user_id} className="p-3 bg-muted/30 rounded-lg border">
+                   <div className="flex justify-between items-start">
+                     <div className="space-y-1">
+                       <p className="font-medium">{user.name}</p>
+                       <p className="text-sm text-muted-foreground">{user.reason}</p>
+                     </div>
+                     <span className="text-xs text-muted-foreground font-mono">
+                       {user.user_id}
+                     </span>
+                   </div>
+                 </div>
+               ))}
             </div>
           </CardContent>
         </Card>

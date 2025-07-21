@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Search, Plus, AlertCircle, CheckCircle, User as UserIcon } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
 import { useToast } from "@/hooks/use-toast";
+import { useSupabase } from "@/hooks/useSupabase";
 
 interface BlockedUser {
   id: string;
@@ -14,6 +15,7 @@ interface BlockedUser {
 }
 
 interface User {
+  id?: string;
   username: string;
   userType: 'admin' | 'user';
   searchLimit?: number;
@@ -35,16 +37,15 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
     reason: ""
   });
   const [remainingSearches, setRemainingSearches] = useState(user.remainingSearches || 0);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { 
+    searchBlockedUser, 
+    addBlockedUser, 
+    updateUserSearches 
+  } = useSupabase();
 
-  // بيانات تجريبية للمحظورين (نفس البيانات)
-  const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([
-    { id: "123456789012", name: "أحمد محمد علي", reason: "مخالفة شروط الاستخدام" },
-    { id: "987654321098", name: "فاطمة حسن أحمد", reason: "عدم إرجاع السيارة في الوقت المحدد" },
-    { id: "456789123456", name: "محمد عبدالله سالم", reason: "أضرار بالسيارة" }
-  ]);
-
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (remainingSearches <= 0) {
       toast({
         title: "تم استنفاد البحثات",
@@ -72,12 +73,38 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
       return;
     }
 
-    const found = blockedUsers.find(user => user.id === searchId);
-    setSearchResult(found || "not_found");
-    setRemainingSearches(prev => prev - 1);
+    setIsLoading(true);
+    try {
+      const found = await searchBlockedUser(searchId);
+      if (found) {
+        setSearchResult({
+          id: found.user_id,
+          name: found.name,
+          reason: found.reason
+        });
+      } else {
+        setSearchResult("not_found");
+      }
+      
+      const newCount = remainingSearches - 1;
+      setRemainingSearches(newCount);
+      
+      // تحديث عدد البحثات في قاعدة البيانات
+      if (user.id) {
+        await updateUserSearches(user.id, newCount);
+      }
+    } catch (error) {
+      toast({
+        title: "خطأ في البحث",
+        description: "حدث خطأ أثناء البحث",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAddBlock = () => {
+  const handleAddBlock = async () => {
     if (newBlock.id.length !== 12) {
       toast({
         title: "خطأ",
@@ -105,27 +132,47 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
       return;
     }
 
-    // التحقق من عدم وجود الرقم مسبقاً
-    if (blockedUsers.find(user => user.id === newBlock.id)) {
-      toast({
-        title: "خطأ",
-        description: "هذا الرقم التعريفي موجود مسبقاً",
-        variant: "destructive"
-      });
-      return;
-    }
+    setIsLoading(true);
+    try {
+      // التحقق من عدم وجود الرقم مسبقاً
+      const existing = await searchBlockedUser(newBlock.id);
+      if (existing) {
+        toast({
+          title: "خطأ",
+          description: "هذا الرقم التعريفي موجود مسبقاً",
+          variant: "destructive"
+        });
+        return;
+      }
 
-    setBlockedUsers([...blockedUsers, newBlock]);
-    setNewBlock({ id: "", name: "", reason: "" });
-    setShowAddForm(false);
-    
-    // إضافة 5 بحثات عند الإضافة الناجحة
-    setRemainingSearches(prev => prev + 5);
-    
-    toast({
-      title: "تم بنجاح",
-      description: "تم إضافة البلوك الجديد وحصلت على 5 بحثات إضافية"
-    });
+      await addBlockedUser({
+        user_id: newBlock.id,
+        name: newBlock.name,
+        reason: newBlock.reason,
+        created_by: user.username
+      });
+
+      setNewBlock({ id: "", name: "", reason: "" });
+      setShowAddForm(false);
+      
+      // إضافة 5 بحثات عند الإضافة الناجحة
+      const newCount = remainingSearches + 5;
+      setRemainingSearches(newCount);
+      
+      // تحديث عدد البحثات في قاعدة البيانات
+      if (user.id) {
+        await updateUserSearches(user.id, newCount);
+      }
+      
+      toast({
+        title: "تم بنجاح",
+        description: "تم إضافة البلوك الجديد وحصلت على 5 بحثات إضافية"
+      });
+    } catch (error) {
+      // الخطأ يتم التعامل معه في useSupabase
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -178,10 +225,10 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
               </div>
               <Button 
                 onClick={handleSearch}
-                disabled={searchId.length !== 12 || remainingSearches <= 0}
+                disabled={searchId.length !== 12 || remainingSearches <= 0 || isLoading}
                 className="bg-gradient-to-r from-primary to-primary-glow"
               >
-                بحث
+                {isLoading ? "جارٍ البحث..." : "بحث"}
               </Button>
             </div>
 
@@ -283,9 +330,9 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
                 <Button 
                   onClick={handleAddBlock}
                   className="w-full bg-gradient-to-r from-primary to-primary-glow"
-                  disabled={!newBlock.id || !newBlock.name || !newBlock.reason}
+                  disabled={!newBlock.id || !newBlock.name || !newBlock.reason || isLoading}
                 >
-                  إضافة البلوك (+5 بحثات)
+                  {isLoading ? "جارٍ الإضافة..." : "إضافة البلوك (+5 بحثات)"}
                 </Button>
               </div>
             </CardContent>
