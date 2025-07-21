@@ -118,18 +118,31 @@ export const useSupabase = () => {
   }
 
   // إضافة مستخدم محظور
-  const addBlockedUser = async (blockedUserData: Omit<BlockedUser, 'id' | 'created_at'>) => {
+  const addBlockedUser = async (blockedUserData: Omit<BlockedUser, 'id' | 'created_at'>, addedBy?: string) => {
     try {
       // حفظ محلي
       const newBlocked = {
         id: Date.now().toString(),
         ...blockedUserData,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        added_by: addedBy || 'unknown'
       };
 
       const existingBlocked = JSON.parse(localStorage.getItem('app_blocked') || '[]');
       existingBlocked.push(newBlocked);
       localStorage.setItem('app_blocked', JSON.stringify(existingBlocked));
+
+      // تتبع نشاط الحسابات
+      if (addedBy && addedBy !== 'admin') {
+        const accountActivity = JSON.parse(localStorage.getItem('accountActivity') || '[]');
+        accountActivity.push({
+          username: addedBy,
+          action: 'added_block',
+          blockedUserId: blockedUserData.user_id,
+          timestamp: new Date().toISOString()
+        });
+        localStorage.setItem('accountActivity', JSON.stringify(accountActivity));
+      }
 
       toast({
         title: "تم إضافة البلوك بنجاح",
@@ -181,6 +194,16 @@ export const useSupabase = () => {
     }
   }
 
+  // الحصول على نشاط الحسابات
+  const getAccountActivity = async () => {
+    try {
+      return JSON.parse(localStorage.getItem('accountActivity') || '[]');
+    } catch (error) {
+      console.error('Error getting account activity:', error);
+      return [];
+    }
+  };
+
   return {
     login,
     createUser,
@@ -188,6 +211,7 @@ export const useSupabase = () => {
     addBlockedUser,
     getBlockedUsers,
     getUsers,
-    updateUserSearches
+    updateUserSearches,
+    getAccountActivity
   }
 }

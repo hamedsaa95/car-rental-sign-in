@@ -27,9 +27,9 @@ const CarRentalLogo = ({ size = "md", showText = true }: CarRentalLogoProps) => 
       {showText && (
         <div className="flex flex-col">
           <h1 className={`${sizes[size].text} font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent`}>
-            كار رينت
+            Rental Car
           </h1>
-          <p className="text-xs text-muted-foreground -mt-1">نظام تأجير السيارات</p>
+          <p className="text-xs text-muted-foreground -mt-1">Car Rental System</p>
         </div>
       )}
     </div>

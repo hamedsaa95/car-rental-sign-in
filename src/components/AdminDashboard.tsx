@@ -42,6 +42,7 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   });
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [userAccounts, setUserAccounts] = useState<any[]>([]);
+  const [accountActivity, setAccountActivity] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const { toast } = useToast();
@@ -50,7 +51,8 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     addBlockedUser, 
     getBlockedUsers, 
     createUser, 
-    getUsers 
+    getUsers,
+    getAccountActivity 
   } = useSupabase();
 
   // تحميل البيانات عند بدء التشغيل
@@ -61,12 +63,14 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [blockedData, usersData] = await Promise.all([
+      const [blockedData, usersData, activityData] = await Promise.all([
         getBlockedUsers(),
-        getUsers()
+        getUsers(),
+        getAccountActivity()
       ]);
       setBlockedUsers(blockedData);
       setUserAccounts(usersData.filter(user => user.user_type === 'user'));
+      setAccountActivity(activityData);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -161,7 +165,7 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
         name: newBlock.name,
         reason: newBlock.reason,
         created_by: 'admin'
-      });
+      }, 'admin');
 
       setNewBlock({ id: "", name: "", reason: "" });
       setShowAddForm(false);
@@ -480,6 +484,46 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
           </CardContent>
         </Card>
 
+        {/* مراقبة نشاط الحسابات */}
+        <Card className="mb-6 bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              مراقبة نشاط الحسابات ({accountActivity.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {accountActivity.length === 0 ? (
+                <p className="text-center text-muted-foreground py-4">
+                  لا توجد أنشطة مسجلة
+                </p>
+              ) : (
+                accountActivity.map((activity, index) => (
+                  <div key={index} className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                          المستخدم: {activity.username}
+                        </p>
+                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                          أضاف حظر للرقم: {activity.blockedUserId}
+                        </p>
+                        <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                          {new Date(activity.timestamp).toLocaleString('ar-SA')}
+                        </p>
+                      </div>
+                      <span className="text-xs bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded">
+                        إضافة حظر
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* قائمة المحظورين الحالية */}
         <Card className="bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
           <CardHeader>
@@ -496,6 +540,11 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                      <div className="space-y-1">
                        <p className="font-medium">{user.name}</p>
                        <p className="text-sm text-muted-foreground">{user.reason}</p>
+                       {user.added_by && (
+                         <p className="text-xs text-muted-foreground">
+                           أضيف بواسطة: {user.added_by}
+                         </p>
+                       )}
                      </div>
                      <span className="text-xs text-muted-foreground font-mono">
                        {user.user_id}
