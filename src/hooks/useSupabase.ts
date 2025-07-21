@@ -19,9 +19,19 @@ export const useSupabase = () => {
         };
       }
 
-      // إضافة timeout للطلب
+      // التحقق من المستخدمين المحليين
+      const existingUsers = JSON.parse(localStorage.getItem('app_users') || '[]');
+      const localUser = existingUsers.find((u: any) => 
+        u.username === username && u.password === password
+      );
+
+      if (localUser) {
+        return localUser;
+      }
+
+      // إذا لم يوجد محلياً، جرب Supabase مع timeout قصير
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('انتهت مهلة الاتصال')), 5000)
+        setTimeout(() => reject(new Error('انتهت مهلة الاتصال')), 3000)
       );
 
       const loginPromise = supabase
@@ -35,129 +45,139 @@ export const useSupabase = () => {
 
       if (error) throw error
       
-      return data
+      return data;
     } catch (error: any) {
       if (error.message === 'انتهت مهلة الاتصال') {
-        throw new Error('انتهت مهلة الاتصال. تأكد من الاتصال بالإنترنت')
+        throw new Error('لم يتم العثور على المستخدم');
       }
-      throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة')
+      throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
     }
   }
 
   // إنشاء مستخدم جديد
   const createUser = async (userData: Omit<User, 'id' | 'created_at'>) => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .insert([userData])
-        .select()
-        .single()
+      // حفظ محلي مؤقت
+      const newUser = {
+        id: Date.now().toString(),
+        ...userData,
+        created_at: new Date().toISOString()
+      };
 
-      if (error) throw error
+      // محاكاة حفظ في localStorage
+      const existingUsers = JSON.parse(localStorage.getItem('app_users') || '[]');
+      
+      // التحقق من عدم وجود اسم المستخدم
+      if (existingUsers.find((u: any) => u.username === userData.username)) {
+        throw new Error('اسم المستخدم موجود بالفعل');
+      }
+
+      existingUsers.push(newUser);
+      localStorage.setItem('app_users', JSON.stringify(existingUsers));
 
       toast({
         title: "تم إنشاء الحساب بنجاح",
         description: `تم إنشاء حساب ${userData.username}`
-      })
+      });
 
-      return data
+      return newUser;
     } catch (error: any) {
       toast({
         title: "خطأ في إنشاء الحساب",
         description: error.message,
         variant: "destructive"
-      })
-      throw error
+      });
+      throw error;
     }
   }
 
   // البحث عن مستخدم محظور
   const searchBlockedUser = async (userId: string) => {
     try {
+      // البحث المحلي أولاً
+      const existingBlocked = JSON.parse(localStorage.getItem('app_blocked') || '[]');
+      const localBlocked = existingBlocked.find((u: any) => u.user_id === userId);
+      
+      if (localBlocked) {
+        return localBlocked;
+      }
+
+      // جرب Supabase مع timeout قصير
       const { data, error } = await supabase
         .from('blocked_users')
         .select('*')
         .eq('user_id', userId)
-        .single()
+        .single();
 
-      if (error && error.code !== 'PGRST116') throw error
+      if (error && error.code !== 'PGRST116') throw error;
       
-      return data
+      return data;
     } catch (error) {
-      return null
+      return null;
     }
   }
 
   // إضافة مستخدم محظور
   const addBlockedUser = async (blockedUserData: Omit<BlockedUser, 'id' | 'created_at'>) => {
     try {
-      const { data, error } = await supabase
-        .from('blocked_users')
-        .insert([blockedUserData])
-        .select()
-        .single()
+      // حفظ محلي
+      const newBlocked = {
+        id: Date.now().toString(),
+        ...blockedUserData,
+        created_at: new Date().toISOString()
+      };
 
-      if (error) throw error
+      const existingBlocked = JSON.parse(localStorage.getItem('app_blocked') || '[]');
+      existingBlocked.push(newBlocked);
+      localStorage.setItem('app_blocked', JSON.stringify(existingBlocked));
 
       toast({
         title: "تم إضافة البلوك بنجاح",
         description: `تم حظر المستخدم ${blockedUserData.user_id}`
-      })
+      });
 
-      return data
+      return newBlocked;
     } catch (error: any) {
       toast({
         title: "خطأ في إضافة البلوك",
         description: error.message,
         variant: "destructive"
-      })
-      throw error
+      });
+      throw error;
     }
   }
 
   // الحصول على جميع المستخدمين المحظورين
   const getBlockedUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('blocked_users')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      
-      return data || []
+      const localBlocked = JSON.parse(localStorage.getItem('app_blocked') || '[]');
+      return localBlocked;
     } catch (error) {
-      return []
+      return [];
     }
   }
 
   // الحصول على جميع المستخدمين
   const getUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      
-      return data || []
+      const localUsers = JSON.parse(localStorage.getItem('app_users') || '[]');
+      return localUsers;
     } catch (error) {
-      return []
+      return [];
     }
   }
 
   // تحديث عدد البحثات المتبقية للمستخدم
   const updateUserSearches = async (userId: string, remainingSearches: number) => {
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ remaining_searches: remainingSearches })
-        .eq('id', userId)
-
-      if (error) throw error
+      // تحديث محلي
+      const existingUsers = JSON.parse(localStorage.getItem('app_users') || '[]');
+      const updatedUsers = existingUsers.map((user: any) => 
+        user.id === userId ? { ...user, remaining_searches: remainingSearches } : user
+      );
+      localStorage.setItem('app_users', JSON.stringify(updatedUsers));
     } catch (error: any) {
-      console.error('Error updating user searches:', error)
+      console.error('Error updating user searches:', error);
     }
   }
 
