@@ -8,9 +8,20 @@ export const useSupabase = () => {
   // تسجيل الدخول
   const login = async (username: string, password: string) => {
     try {
+      // التحقق المحلي أولاً للمدير
+      if (username === 'admin' && password === '5971') {
+        return {
+          id: '1',
+          username: 'admin',
+          user_type: 'admin' as const,
+          search_limit: null,
+          remaining_searches: null
+        };
+      }
+
       // إضافة timeout للطلب
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('انتهت مهلة الاتصال')), 10000)
+        setTimeout(() => reject(new Error('انتهت مهلة الاتصال')), 5000)
       );
 
       const loginPromise = supabase
