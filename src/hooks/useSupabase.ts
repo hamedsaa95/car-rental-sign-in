@@ -8,17 +8,27 @@ export const useSupabase = () => {
   // تسجيل الدخول
   const login = async (username: string, password: string) => {
     try {
-      const { data, error } = await supabase
+      // إضافة timeout للطلب
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('انتهت مهلة الاتصال')), 10000)
+      );
+
+      const loginPromise = supabase
         .from('users')
         .select('*')
         .eq('username', username)
         .eq('password', password)
-        .single()
+        .single();
+
+      const { data, error } = await Promise.race([loginPromise, timeoutPromise]) as any;
 
       if (error) throw error
       
       return data
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message === 'انتهت مهلة الاتصال') {
+        throw new Error('انتهت مهلة الاتصال. تأكد من الاتصال بالإنترنت')
+      }
       throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة')
     }
   }
