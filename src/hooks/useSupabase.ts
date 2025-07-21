@@ -204,6 +204,48 @@ export const useSupabase = () => {
     }
   };
 
+  // حذف مستخدم
+  const deleteUser = async (userId: string) => {
+    try {
+      const existingUsers = JSON.parse(localStorage.getItem('app_users') || '[]');
+      const updatedUsers = existingUsers.filter((user: any) => user.id !== userId);
+      localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+      
+      toast({
+        title: "تم الحذف بنجاح",
+        description: "تم حذف المستخدم بنجاح"
+      });
+    } catch (error: any) {
+      toast({
+        title: "خطأ في الحذف",
+        description: error.message,
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  // حذف مستخدم محظور
+  const deleteBlockedUser = async (userId: string) => {
+    try {
+      const existingBlocked = JSON.parse(localStorage.getItem('app_blocked') || '[]');
+      const updatedBlocked = existingBlocked.filter((user: any) => user.user_id !== userId);
+      localStorage.setItem('app_blocked', JSON.stringify(updatedBlocked));
+      
+      toast({
+        title: "تم إلغاء الحظر بنجاح",
+        description: "تم إزالة المستخدم من قائمة المحظورين"
+      });
+    } catch (error: any) {
+      toast({
+        title: "خطأ في إلغاء الحظر",
+        description: error.message,
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
   return {
     login,
     createUser,
@@ -212,6 +254,8 @@ export const useSupabase = () => {
     getBlockedUsers,
     getUsers,
     updateUserSearches,
-    getAccountActivity
+    getAccountActivity,
+    deleteUser,
+    deleteBlockedUser
   }
 }

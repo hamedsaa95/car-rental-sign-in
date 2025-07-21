@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Plus, User, AlertCircle, CheckCircle, UserPlus } from "lucide-react";
+import { Search, Plus, User, AlertCircle, CheckCircle, UserPlus, Trash2 } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabase } from "@/hooks/useSupabase";
@@ -52,7 +52,9 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     getBlockedUsers, 
     createUser, 
     getUsers,
-    getAccountActivity 
+    getAccountActivity,
+    deleteUser,
+    deleteBlockedUser 
   } = useSupabase();
 
   // تحميل البيانات عند بدء التشغيل
@@ -213,6 +215,34 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
       // الخطأ يتم التعامل معه في useSupabase
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, username: string) => {
+    if (window.confirm(`هل أنت متأكد من حذف المستخدم ${username}؟`)) {
+      setIsLoading(true);
+      try {
+        await deleteUser(userId);
+        await loadData();
+      } catch (error) {
+        // الخطأ يتم التعامل معه في useSupabase
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleDeleteBlockedUser = async (userId: string, name: string) => {
+    if (window.confirm(`هل أنت متأكد من إلغاء حظر ${name}؟`)) {
+      setIsLoading(true);
+      try {
+        await deleteBlockedUser(userId);
+        await loadData();
+      } catch (error) {
+        // الخطأ يتم التعامل معه في useSupabase
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -469,9 +499,20 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                          البحثات المتبقية: {user.remaining_searches}/{user.search_limit}
                        </p>
                      </div>
-                    <span className="text-xs text-muted-foreground">
-                      كلمة المرور: {user.password}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        كلمة المرور: {user.password}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteUser(user.id, user.username)}
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        disabled={isLoading}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -546,12 +587,28 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
                          </p>
                        )}
                      </div>
-                     <span className="text-xs text-muted-foreground font-mono">
-                       {user.user_id}
-                     </span>
+                     <div className="flex items-center gap-2">
+                       <span className="text-xs text-muted-foreground font-mono">
+                         {user.user_id}
+                       </span>
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => handleDeleteBlockedUser(user.user_id, user.name)}
+                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                         disabled={isLoading}
+                       >
+                         <Trash2 className="h-4 w-4" />
+                       </Button>
+                     </div>
                    </div>
                  </div>
                ))}
+               {blockedUsers.length === 0 && (
+                 <p className="text-center text-muted-foreground py-4">
+                   لا توجد مستخدمين محظورين
+                 </p>
+                )}
             </div>
           </CardContent>
         </Card>
