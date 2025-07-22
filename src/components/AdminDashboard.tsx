@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Plus, User, AlertCircle, CheckCircle, UserPlus, Trash2 } from "lucide-react";
+import { Search, Plus, User, AlertCircle, CheckCircle, UserPlus, Trash2, Settings } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabase } from "@/hooks/useSupabase";
@@ -40,6 +40,11 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     password: "",
     searchLimit: 10
   });
+  const [showAdminSettingsForm, setShowAdminSettingsForm] = useState(false);
+  const [adminCredentials, setAdminCredentials] = useState({
+    username: "",
+    password: ""
+  });
   const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [userAccounts, setUserAccounts] = useState<any[]>([]);
   const [accountActivity, setAccountActivity] = useState<any[]>([]);
@@ -54,13 +59,21 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     getUsers,
     getAccountActivity,
     deleteUser,
-    deleteBlockedUser 
+    deleteBlockedUser,
+    updateAdminCredentials,
+    getAdminCredentials
   } = useSupabase();
 
   // تحميل البيانات عند بدء التشغيل
   useEffect(() => {
     loadData();
+    loadAdminCredentials();
   }, []);
+
+  const loadAdminCredentials = () => {
+    const credentials = getAdminCredentials();
+    setAdminCredentials(credentials);
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -246,6 +259,45 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     }
   };
 
+  const handleUpdateAdminCredentials = async () => {
+    if (!adminCredentials.username.trim() || !adminCredentials.password.trim()) {
+      toast({
+        title: "خطأ",
+        description: "يرجى ملء جميع الحقول",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (adminCredentials.username.length < 3) {
+      toast({
+        title: "خطأ",
+        description: "اسم المستخدم يجب أن يكون 3 أحرف على الأقل",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (adminCredentials.password.length < 4) {
+      toast({
+        title: "خطأ", 
+        description: "كلمة المرور يجب أن تكون 4 أحرف على الأقل",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await updateAdminCredentials(adminCredentials.username, adminCredentials.password);
+      setShowAdminSettingsForm(false);
+    } catch (error) {
+      // الخطأ يتم التعامل معه في useSupabase
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-primary/5 p-4">
       <div className="max-w-4xl mx-auto">
@@ -254,11 +306,80 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
           <CarRentalLogo size="md" />
           <div className="flex items-center gap-4">
             <span className="text-sm text-muted-foreground">مرحباً، المدير</span>
+            <Button 
+              onClick={() => setShowAdminSettingsForm(!showAdminSettingsForm)}
+              variant="outline" 
+              size="sm"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              إعدادات المدير
+            </Button>
             <Button onClick={onLogout} variant="outline" size="sm">
               تسجيل الخروج
             </Button>
           </div>
         </div>
+
+        {/* إعدادات المدير */}
+        {showAdminSettingsForm && (
+          <Card className="mb-6 bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                إعدادات المدير
+              </CardTitle>
+              <CardDescription>
+                تغيير اسم المستخدم وكلمة المرور الخاصة بالمدير
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="adminUsername">اسم المستخدم الجديد</Label>
+                  <Input
+                    id="adminUsername"
+                    type="text"
+                    placeholder="ادخل اسم المستخدم الجديد"
+                    value={adminCredentials.username}
+                    onChange={(e) => setAdminCredentials(prev => ({ ...prev, username: e.target.value }))}
+                    className="text-right"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="adminPassword">كلمة المرور الجديدة</Label>
+                  <Input
+                    id="adminPassword"
+                    type="text"
+                    placeholder="ادخل كلمة المرور الجديدة"
+                    value={adminCredentials.password}
+                    onChange={(e) => setAdminCredentials(prev => ({ ...prev, password: e.target.value }))}
+                    className="text-right"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleUpdateAdminCredentials}
+                    className="flex-1 bg-gradient-to-r from-primary to-primary-glow"
+                    disabled={!adminCredentials.username || !adminCredentials.password || isLoading}
+                  >
+                    {isLoading ? "جاري التحديث..." : "تحديث البيانات"}
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setShowAdminSettingsForm(false);
+                      loadAdminCredentials();
+                    }}
+                    variant="outline"
+                  >
+                    إلغاء
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* واجهة البحث */}
         <Card className="mb-6 bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">

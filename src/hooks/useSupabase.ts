@@ -8,11 +8,13 @@ export const useSupabase = () => {
   // تسجيل الدخول
   const login = async (username: string, password: string) => {
     try {
-      // التحقق المحلي أولاً للمدير
-      if (username === 'admin' && password === '5971') {
+      // التحقق من بيانات المدير المحفوظة
+      const adminCredentials = JSON.parse(localStorage.getItem('admin_credentials') || '{"username":"admin","password":"5971"}');
+      
+      if (username === adminCredentials.username && password === adminCredentials.password) {
         return {
           id: '1',
-          username: 'admin',
+          username: adminCredentials.username,
           user_type: 'admin' as const,
           search_limit: null,
           remaining_searches: null
@@ -246,6 +248,35 @@ export const useSupabase = () => {
     }
   };
 
+  // تغيير بيانات المدير
+  const updateAdminCredentials = async (newUsername: string, newPassword: string) => {
+    try {
+      const adminCredentials = {
+        username: newUsername,
+        password: newPassword
+      };
+      
+      localStorage.setItem('admin_credentials', JSON.stringify(adminCredentials));
+      
+      toast({
+        title: "تم تحديث بيانات المدير",
+        description: "تم تغيير اسم المستخدم وكلمة المرور بنجاح"
+      });
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: "فشل في تحديث بيانات المدير",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  }
+
+  // الحصول على بيانات المدير الحالية
+  const getAdminCredentials = () => {
+    return JSON.parse(localStorage.getItem('admin_credentials') || '{"username":"admin","password":"5971"}');
+  }
+
   return {
     login,
     createUser,
@@ -256,6 +287,8 @@ export const useSupabase = () => {
     updateUserSearches,
     getAccountActivity,
     deleteUser,
-    deleteBlockedUser
+    deleteBlockedUser,
+    updateAdminCredentials,
+    getAdminCredentials
   }
 }
