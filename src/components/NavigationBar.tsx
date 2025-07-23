@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Home, Settings, BookOpen, MessageCircle, X } from "lucide-react";
+import { Home, Settings, BookOpen, MessageCircle, X, Menu } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
 
 interface NavigationBarProps {
@@ -13,6 +13,24 @@ interface NavigationBarProps {
 
 const NavigationBar = ({ currentPage, onNavigate, onLogout, userType }: NavigationBarProps) => {
   const [showSupportChat, setShowSupportChat] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [timer, setTimer] = useState({ minutes: 0, seconds: 33 });
+
+  // Timer functionality
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimer(prev => {
+        if (prev.seconds > 0) {
+          return { ...prev, seconds: prev.seconds - 1 };
+        } else if (prev.minutes > 0) {
+          return { minutes: prev.minutes - 1, seconds: 59 };
+        }
+        return prev;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const navigationItems = [
     { id: 'dashboard', label: 'الصفحة الرئيسية', icon: Home },
@@ -24,56 +42,92 @@ const NavigationBar = ({ currentPage, onNavigate, onLogout, userType }: Navigati
 
   return (
     <>
-      <nav className="bg-card/95 backdrop-blur-sm border-b border-border/50 shadow-sm">
+      <nav className="bg-secondary/10 backdrop-blur-sm border-b border-border/20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <CarRentalLogo size="sm" />
-
-            {/* Navigation Links */}
-            <div className="flex items-center space-x-8 rtl:space-x-reverse">
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Button
-                    key={item.id}
-                    variant={currentPage === item.id ? "default" : "ghost"}
-                    onClick={() => onNavigate(item.id)}
-                    className="flex items-center gap-2"
-                  >
-                    <Icon className="h-4 w-4" />
-                    {item.label}
-                  </Button>
-                );
-              })}
+          <div className="flex justify-between items-center h-14">
+            {/* Right Side - Search Text */}
+            <div className="text-sm font-medium text-foreground">
+              البحث
             </div>
 
-            {/* Support Chat & Logout */}
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSupportChat(true)}
-                className="flex items-center gap-2"
-              >
-                <MessageCircle className="h-4 w-4" />
-                الدعم المباشر
-                <Badge variant="secondary" className="text-xs">
-                  متاح
-                </Badge>
-              </Button>
-              
-              <Button 
-                onClick={onLogout} 
-                variant="outline" 
-                size="sm"
-              >
-                تسجيل الخروج
-              </Button>
+            {/* Center - Timer */}
+            <div className="bg-primary rounded-full px-4 py-1 text-primary-foreground text-sm font-medium">
+              {timer.minutes}:{timer.seconds.toString().padStart(2, '0')}
             </div>
+
+            {/* Left Side - Menu Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </nav>
+
+      {/* Dropdown Menu */}
+      {showMenu && (
+        <div className="absolute top-14 left-4 bg-card rounded-lg shadow-lg border border-border z-50 min-w-[200px]">
+          <div className="p-2 space-y-1">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Button
+                  key={item.id}
+                  variant={currentPage === item.id ? "default" : "ghost"}
+                  onClick={() => {
+                    onNavigate(item.id);
+                    setShowMenu(false);
+                  }}
+                  className="w-full justify-start gap-2"
+                >
+                  <Icon className="h-4 w-4" />
+                  {item.label}
+                </Button>
+              );
+            })}
+            
+            <div className="border-t border-border my-1"></div>
+            
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowSupportChat(true);
+                setShowMenu(false);
+              }}
+              className="w-full justify-start gap-2"
+            >
+              <MessageCircle className="h-4 w-4" />
+              الدعم المباشر
+              <Badge variant="secondary" className="text-xs ml-auto">
+                متاح
+              </Badge>
+            </Button>
+            
+            <Button 
+              onClick={() => {
+                onLogout();
+                setShowMenu(false);
+              }}
+              variant="ghost" 
+              className="w-full justify-start text-destructive hover:text-destructive"
+            >
+              تسجيل الخروج
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Backdrop for menu */}
+      {showMenu && (
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowMenu(false)}
+        />
+      )}
 
       {/* Support Chat Modal */}
       {showSupportChat && (
