@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Plus, User, AlertCircle, CheckCircle, UserPlus, Trash2, Settings } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
+import NewsTickerBar from "./NewsTickerBar";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabase } from "@/hooks/useSupabase";
 
@@ -299,9 +300,13 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-primary/5 p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* الهيدر */}
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-primary/5">
+      {/* شريط الأخبار */}
+      <NewsTickerBar onDataUpdate={loadData} />
+      
+      <div className="p-4">
+        <div className="max-w-4xl mx-auto">
+          {/* الهيدر */}
         <div className="flex justify-between items-center mb-8">
           <CarRentalLogo size="md" />
           <div className="flex items-center gap-4">
@@ -733,6 +738,7 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );
