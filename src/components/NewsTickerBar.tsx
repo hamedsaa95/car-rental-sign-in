@@ -43,13 +43,13 @@ const NewsTickerBar = ({ onDataUpdate }: NewsTickerBarProps) => {
             <div className="animate-scroll-right flex gap-8 whitespace-nowrap">
               {recentBlocks.map((user, index) => (
                 <span key={user.id || index} className="text-sm text-muted-foreground">
-                  {user.name}
+                  {index + 1}. {user.name}
                 </span>
               ))}
               {/* تكرار القائمة لضمان التمرير المستمر */}
               {recentBlocks.map((user, index) => (
                 <span key={`duplicate-${user.id || index}`} className="text-sm text-muted-foreground">
-                  {user.name}
+                  {index + 1}. {user.name}
                 </span>
               ))}
             </div>
