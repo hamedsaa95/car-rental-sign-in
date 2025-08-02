@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Home, Settings, BookOpen, MessageCircle, X, Menu } from "lucide-react";
@@ -14,23 +14,6 @@ interface NavigationBarProps {
 const NavigationBar = ({ currentPage, onNavigate, onLogout, userType }: NavigationBarProps) => {
   const [showSupportChat, setShowSupportChat] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [timer, setTimer] = useState({ minutes: 0, seconds: 33 });
-
-  // Timer functionality
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimer(prev => {
-        if (prev.seconds > 0) {
-          return { ...prev, seconds: prev.seconds - 1 };
-        } else if (prev.minutes > 0) {
-          return { minutes: prev.minutes - 1, seconds: 59 };
-        }
-        return prev;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   const navigationItems = [
     { id: 'dashboard', label: 'الصفحة الرئيسية', icon: Home },
@@ -50,10 +33,8 @@ const NavigationBar = ({ currentPage, onNavigate, onLogout, userType }: Navigati
               البحث
             </div>
 
-            {/* Center - Timer */}
-            <div className="bg-primary rounded-full px-4 py-1 text-primary-foreground text-sm font-medium">
-              {timer.minutes}:{timer.seconds.toString().padStart(2, '0')}
-            </div>
+            {/* Center - Empty Space */}
+            <div></div>
 
             {/* Left Side - Menu Button */}
             <Button
