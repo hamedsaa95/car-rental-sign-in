@@ -28,7 +28,15 @@ const NavigationBar = ({ currentPage, onNavigate, onLogout, userType }: Navigati
       <nav className="bg-secondary/10 backdrop-blur-sm border-b border-border/20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center h-14">
-            {/* Left Side - Menu Button */}
+            {/* Left Side - Search Text */}
+            <div className="text-sm font-medium text-foreground">
+              البحث
+            </div>
+
+            {/* Center - Empty Space */}
+            <div></div>
+
+            {/* Right Side - Menu Button */}
             <Button
               variant="ghost"
               size="sm"
@@ -37,14 +45,6 @@ const NavigationBar = ({ currentPage, onNavigate, onLogout, userType }: Navigati
             >
               <Menu className="h-5 w-5" />
             </Button>
-
-            {/* Center - Empty Space */}
-            <div></div>
-
-            {/* Right Side - Search Text */}
-            <div className="text-sm font-medium text-foreground">
-              البحث
-            </div>
           </div>
         </div>
       </nav>
