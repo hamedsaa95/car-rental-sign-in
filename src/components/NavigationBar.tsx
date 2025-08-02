@@ -28,14 +28,6 @@ const NavigationBar = ({ currentPage, onNavigate, onLogout, userType }: Navigati
       <nav className="bg-secondary/10 backdrop-blur-sm border-b border-border/20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center h-14">
-            {/* Right Side - Search Text */}
-            <div className="text-sm font-medium text-foreground">
-              البحث
-            </div>
-
-            {/* Center - Empty Space */}
-            <div></div>
-
             {/* Left Side - Menu Button */}
             <Button
               variant="ghost"
@@ -45,13 +37,21 @@ const NavigationBar = ({ currentPage, onNavigate, onLogout, userType }: Navigati
             >
               <Menu className="h-5 w-5" />
             </Button>
+
+            {/* Center - Empty Space */}
+            <div></div>
+
+            {/* Right Side - Search Text */}
+            <div className="text-sm font-medium text-foreground">
+              البحث
+            </div>
           </div>
         </div>
       </nav>
 
       {/* Dropdown Menu */}
       {showMenu && (
-        <div className="absolute top-14 left-4 bg-card rounded-lg shadow-lg border border-border z-50 min-w-[200px]">
+        <div className="absolute top-14 right-4 bg-card rounded-lg shadow-lg border border-border z-50 min-w-[200px]">
           <div className="p-2 space-y-1">
             {navigationItems.map((item) => {
               const Icon = item.icon;
