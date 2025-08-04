@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Home, Settings, BookOpen, MessageCircle, X, Menu } from "lucide-react";
+import { Home, Settings, BookOpen, MessageCircle, X, Menu, Send } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import CarRentalLogo from "./CarRentalLogo";
 
 interface NavigationBarProps {
@@ -11,9 +12,72 @@ interface NavigationBarProps {
   userType: 'admin' | 'user';
 }
 
+interface ChatMessage {
+  id: string;
+  message: string;
+  sender: 'user' | 'admin';
+  timestamp: Date;
+}
+
 const NavigationBar = ({ currentPage, onNavigate, onLogout, userType }: NavigationBarProps) => {
   const [showSupportChat, setShowSupportChat] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [chatMessage, setChatMessage] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      id: '1',
+      message: 'مرحباً! كيف يمكنني مساعدتك اليوم؟',
+      sender: 'admin',
+      timestamp: new Date(),
+    }
+  ]);
+  const { toast } = useToast();
+
+  const handleSendMessage = async () => {
+    if (!chatMessage.trim()) return;
+
+    // إضافة رسالة المستخدم
+    const newUserMessage: ChatMessage = {
+      id: Date.now().toString(),
+      message: chatMessage.trim(),
+      sender: 'user',
+      timestamp: new Date(),
+    };
+
+    setChatMessages(prev => [...prev, newUserMessage]);
+    setChatMessage("");
+
+    // إشعار نجاح الإرسال
+    toast({
+      title: "تم إرسال الرسالة",
+      description: "تم إرسال رسالتك بنجاح إلى المدير",
+    });
+
+    // حفظ الرسالة في localStorage
+    try {
+      const savedMessages = JSON.parse(localStorage.getItem('support_messages') || '[]');
+      const messageToSave = {
+        ...newUserMessage,
+        userId: localStorage.getItem('currentUser') || 'unknown',
+        userType: userType
+      };
+      savedMessages.push(messageToSave);
+      localStorage.setItem('support_messages', JSON.stringify(savedMessages));
+    } catch (error) {
+      console.error('خطأ في حفظ الرسالة:', error);
+    }
+
+    // محاكاة رد المدير التلقائي
+    setTimeout(() => {
+      const adminReply: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        message: 'شكراً لك على رسالتك. سيتم الرد عليك قريباً من قبل المدير.',
+        sender: 'admin',
+        timestamp: new Date(),
+      };
+      setChatMessages(prev => [...prev, adminReply]);
+    }, 1500);
+  };
 
   const navigationItems = [
     { id: 'dashboard', label: 'الصفحة الرئيسية', icon: Home },
@@ -133,31 +197,27 @@ const NavigationBar = ({ currentPage, onNavigate, onLogout, userType }: Navigati
             </div>
 
             {/* Chat Content */}
-            <div className="flex-1 p-4 overflow-y-auto">
+            <div className="flex-1 p-4 overflow-y-auto" dir="rtl">
               <div className="space-y-4">
-                {/* Admin Message */}
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg p-3 max-w-[80%]">
-                    <p className="text-sm">مرحباً! كيف يمكنني مساعدتك اليوم؟</p>
-                    <span className="text-xs text-muted-foreground">المدير • الآن</span>
+                {chatMessages.map((msg) => (
+                  <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-start' : 'justify-end'}`}>
+                    <div className={`rounded-lg p-3 max-w-[80%] ${
+                      msg.sender === 'user' 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'bg-muted'
+                    }`}>
+                      <p className="text-sm">{msg.message}</p>
+                      <span className={`text-xs ${
+                        msg.sender === 'user' ? 'opacity-80' : 'text-muted-foreground'
+                      }`}>
+                        {msg.sender === 'user' ? 'أنت' : 'المدير'} • {msg.timestamp.toLocaleTimeString('ar-SA', { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                
-                {/* User Message Example */}
-                <div className="flex justify-end">
-                  <div className="bg-primary text-primary-foreground rounded-lg p-3 max-w-[80%]">
-                    <p className="text-sm">أحتاج مساعدة في استخدام النظام</p>
-                    <span className="text-xs opacity-80">أنت • منذ قليل</span>
-                  </div>
-                </div>
-
-                {/* Admin Response */}
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg p-3 max-w-[80%]">
-                    <p className="text-sm">بالطبع! يمكنك مراجعة صفحة الإرشادات للحصول على فيديو تعليمي شامل، أو اخبرني بما تحتاج إليه تحديداً.</p>
-                    <span className="text-xs text-muted-foreground">المدير • الآن</span>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
@@ -167,11 +227,22 @@ const NavigationBar = ({ currentPage, onNavigate, onLogout, userType }: Navigati
                 <input
                   type="text"
                   placeholder="اكتب رسالتك..."
-                  className="flex-1 px-3 py-2 border rounded-md text-sm"
+                  className="flex-1 px-3 py-2 border rounded-md text-sm bg-background"
                   dir="rtl"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSendMessage();
+                    }
+                  }}
                 />
-                <Button size="sm">
-                  إرسال
+                <Button 
+                  size="sm" 
+                  onClick={handleSendMessage}
+                  disabled={!chatMessage.trim()}
+                >
+                  <Send className="h-4 w-4" />
                 </Button>
               </div>
             </div>
