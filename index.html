@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/car-rental-sign-in/manifest.json" />
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Rental Car" />
+    
+    <!-- Mobile Icons -->
+    <link rel="apple-touch-icon" href="/car-rental-sign-in/icon-192x192.png" />
+    <meta name="msapplication-TileImage" content="/icon-192x192.png" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+    
+    <title>Rental Car - نظام تأجير السيارات</title>
+    <meta name="description" content="نظام إدارة تأجير السيارات والبحث عن المستخدمين المحظورين" />
+    <meta name="author" content="Rental Car System" />
+
+    <meta property="og:title" content="Rental Car - نظام تأجير السيارات" />
+    <meta property="og:description" content="نظام إدارة تأجير السيارات والبحث عن المستخدمين المحظورين" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icon-512x512.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/icon-512x512.png" />
+    <script type="module" crossorigin src="/car-rental-sign-in/assets/index-jgzmzJgs.js"></script>
+    <link rel="stylesheet" crossorigin href="/car-rental-sign-in/assets/index-BpIObyEG.css">
+  </head>
+
+  <body>
+    <div id="root"></div>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
+  </body>
+</html>
