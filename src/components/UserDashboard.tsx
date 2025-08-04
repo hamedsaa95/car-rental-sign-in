@@ -27,6 +27,75 @@ interface UserDashboardProps {
   onLogout: () => void;
 }
 
+// دوال التحقق من صحة الرقم المدني الكويتي
+const validateKuwaitiCivilId = (civilId: string): { isValid: boolean; birthDate?: Date; age?: number; error?: string } => {
+  // التحقق من طول الرقم (12 رقم)
+  if (civilId.length !== 12) {
+    return { isValid: false, error: "يجب أن يكون الرقم مكون من 12 رقم" };
+  }
+
+  // التحقق من أن جميع الأحرف أرقام
+  if (!/^\d{12}$/.test(civilId)) {
+    return { isValid: false, error: "يجب أن يحتوي على أرقام فقط" };
+  }
+
+  // استخراج معلومات التاريخ
+  const centuryDigit = parseInt(civilId[0]);
+  const yearDigits = parseInt(civilId.substring(1, 3));
+  const month = parseInt(civilId.substring(3, 5));
+  const day = parseInt(civilId.substring(5, 7));
+
+  // تحديد القرن
+  let century: number;
+  if (centuryDigit === 2) {
+    century = 1900; // القرن العشرين (1900-1999)
+  } else if (centuryDigit === 3) {
+    century = 2000; // القرن الحادي والعشرين (2000-2099)
+  } else {
+    return { isValid: false, error: "رقم القرن غير صحيح (يجب أن يكون 2 أو 3)" };
+  }
+
+  // تكوين السنة الكاملة
+  const fullYear = century + yearDigits;
+
+  // التحقق من صحة الشهر
+  if (month < 1 || month > 12) {
+    return { isValid: false, error: "الشهر غير صحيح" };
+  }
+
+  // التحقق من صحة اليوم
+  if (day < 1 || day > 31) {
+    return { isValid: false, error: "اليوم غير صحيح" };
+  }
+
+  // التحقق من صحة التاريخ
+  const birthDate = new Date(fullYear, month - 1, day);
+  if (birthDate.getFullYear() !== fullYear || 
+      birthDate.getMonth() !== month - 1 || 
+      birthDate.getDate() !== day) {
+    return { isValid: false, error: "التاريخ غير صحيح" };
+  }
+
+  // حساب العمر
+  const today = new Date();
+  let age = today.getFullYear() - fullYear;
+  if (today.getMonth() < month - 1 || 
+      (today.getMonth() === month - 1 && today.getDate() < day)) {
+    age--;
+  }
+
+  // التحقق من العمر (من 18 سنة إلى 104 سنة)
+  if (age < 18) {
+    return { isValid: false, error: "العمر أقل من 18 سنة" };
+  }
+
+  if (age > 104) {
+    return { isValid: false, error: "العمر أكبر من 104 سنة" };
+  }
+
+  return { isValid: true, birthDate, age };
+};
+
 const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
   const [searchId, setSearchId] = useState("");
   const [searchResult, setSearchResult] = useState<BlockedUser | null | "not_found">(null);
@@ -55,19 +124,12 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
       return;
     }
 
-    if (searchId.length !== 12) {
+    // التحقق من صحة الرقم المدني الكويتي
+    const validation = validateKuwaitiCivilId(searchId);
+    if (!validation.isValid) {
       toast({
-        title: "خطأ في البحث",
-        description: "يجب أن يكون الرقم التعريفي مكون من 12 رقم بالضبط",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!/^\d{12}$/.test(searchId)) {
-      toast({
-        title: "خطأ في البحث",
-        description: "يجب أن يحتوي الرقم التعريفي على أرقام فقط",
+        title: "رقم تعريفي غير صحيح",
+        description: validation.error || "الرقم التعريفي غير صالح للبحث",
         variant: "destructive"
       });
       return;
@@ -105,19 +167,12 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
   };
 
   const handleAddBlock = async () => {
-    if (newBlock.id.length !== 12) {
+    // التحقق من صحة الرقم المدني الكويتي
+    const validation = validateKuwaitiCivilId(newBlock.id);
+    if (!validation.isValid) {
       toast({
-        title: "خطأ",
-        description: "يجب أن يكون الرقم التعريفي مكون من 12 رقم بالضبط",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!/^\d{12}$/.test(newBlock.id)) {
-      toast({
-        title: "خطأ",
-        description: "يجب أن يحتوي الرقم التعريفي على أرقام فقط",
+        title: "رقم تعريفي غير صحيح",
+        description: validation.error || "الرقم التعريفي غير صالح للإضافة",
         variant: "destructive"
       });
       return;
