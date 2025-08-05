@@ -22,7 +22,7 @@ export const useSupabase = () => {
       }
 
       // التحقق من المستخدمين المحليين
-      const existingUsers = JSON.parse(localStorage.getItem('app_users') || '[]');
+      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
       const localUser = existingUsers.find((u: any) => 
         u.username === username && u.password === password
       );
@@ -67,7 +67,7 @@ export const useSupabase = () => {
       };
 
       // محاكاة حفظ في localStorage
-      const existingUsers = JSON.parse(localStorage.getItem('app_users') || '[]');
+      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
       
       // التحقق من عدم وجود اسم المستخدم
       if (existingUsers.find((u: any) => u.username === userData.username)) {
@@ -75,7 +75,7 @@ export const useSupabase = () => {
       }
 
       existingUsers.push(newUser);
-      localStorage.setItem('app_users', JSON.stringify(existingUsers));
+      localStorage.setItem('users', JSON.stringify(existingUsers));
 
       toast({
         title: "تم إنشاء الحساب بنجاح",
@@ -175,7 +175,7 @@ export const useSupabase = () => {
   // الحصول على جميع المستخدمين
   const getUsers = async () => {
     try {
-      const localUsers = JSON.parse(localStorage.getItem('app_users') || '[]');
+      const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
       return localUsers;
     } catch (error) {
       return [];
@@ -186,11 +186,11 @@ export const useSupabase = () => {
   const updateUserSearches = async (userId: string, remainingSearches: number) => {
     try {
       // تحديث محلي
-      const existingUsers = JSON.parse(localStorage.getItem('app_users') || '[]');
+      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
       const updatedUsers = existingUsers.map((user: any) => 
         user.id === userId ? { ...user, remaining_searches: remainingSearches } : user
       );
-      localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
     } catch (error: any) {
       console.error('Error updating user searches:', error);
     }
@@ -209,9 +209,9 @@ export const useSupabase = () => {
   // حذف مستخدم
   const deleteUser = async (userId: string) => {
     try {
-      const existingUsers = JSON.parse(localStorage.getItem('app_users') || '[]');
+      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
       const updatedUsers = existingUsers.filter((user: any) => user.id !== userId);
-      localStorage.setItem('app_users', JSON.stringify(updatedUsers));
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
       
       toast({
         title: "تم الحذف بنجاح",
