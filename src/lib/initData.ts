@@ -9,6 +9,13 @@ export const initializeData = () => {
           username: 'admin',
           password: '5971',
           user_type: 'admin'
+        },
+        {
+          username: 'user',
+          password: '1234',
+          user_type: 'user',
+          search_limit: 5,
+          remaining_searches: 5
         }
       ];
       
