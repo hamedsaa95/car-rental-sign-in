@@ -1,31 +1,28 @@
-import { supabase } from './supabase';
-
-export const initializeData = async () => {
+export const initializeData = () => {
   try {
-    // التحقق من وجود المدير
-    const { data: adminUser } = await supabase
-      .from('users')
-      .select('*')
-      .eq('username', 'admin')
-      .single();
+    // إنشاء بيانات المدير في localStorage إذا لم تكن موجودة
+    const existingUsers = localStorage.getItem('users');
+    
+    if (!existingUsers) {
+      const defaultUsers = [
+        {
+          username: 'admin',
+          password: '5971',
+          user_type: 'admin'
+        }
+      ];
+      
+      localStorage.setItem('users', JSON.stringify(defaultUsers));
+      console.log('Admin user created successfully in localStorage');
+    }
 
-    // إنشاء المدير إذا لم يكن موجوداً
-    if (!adminUser) {
-      const { error } = await supabase
-        .from('users')
-        .insert([
-          {
-            username: 'admin',
-            password: '5971',
-            user_type: 'admin'
-          }
-        ]);
-
-      if (error) {
-        console.error('Error creating admin user:', error);
-      } else {
-        console.log('Admin user created successfully');
-      }
+    // تهيئة البيانات الأخرى
+    if (!localStorage.getItem('blocked_ids')) {
+      localStorage.setItem('blocked_ids', JSON.stringify([]));
+    }
+    
+    if (!localStorage.getItem('messages')) {
+      localStorage.setItem('messages', JSON.stringify([]));
     }
   } catch (error) {
     console.error('Error initializing data:', error);

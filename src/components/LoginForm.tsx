@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Eye, EyeOff, Lock, User } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
 import { useToast } from "@/hooks/use-toast";
-import { useSupabase } from "@/hooks/useSupabase";
+
 
 interface User {
   id?: string;
@@ -28,7 +28,6 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
     password: ""
   });
   const { toast } = useToast();
-  const { login } = useSupabase();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +44,13 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
     setIsLoading(true);
     
     try {
-      const user = await login(formData.username, formData.password);
+      // البحث عن المستخدم في localStorage
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const user = users.find((u: any) => u.username === formData.username && u.password === formData.password);
+      
+      if (!user) {
+        throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
+      }
       
       toast({
         title: "تم تسجيل الدخول بنجاح",
@@ -53,11 +58,11 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
       });
       
       onLogin({
-        id: user.id,
+        id: user.id || Date.now().toString(),
         username: user.username,
         userType: user.user_type,
-        searchLimit: user.search_limit,
-        remainingSearches: user.remaining_searches
+        searchLimit: user.search_limit || 5,
+        remainingSearches: user.remaining_searches || 5
       });
     } catch (error: any) {
       toast({
