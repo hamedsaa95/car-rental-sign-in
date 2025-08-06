@@ -14,7 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      account_activity: {
+        Row: {
+          action: string
+          blocked_user_id: string | null
+          id: string
+          timestamp: string
+          username: string
+        }
+        Insert: {
+          action: string
+          blocked_user_id?: string | null
+          id?: string
+          timestamp?: string
+          username: string
+        }
+        Update: {
+          action?: string
+          blocked_user_id?: string | null
+          id?: string
+          timestamp?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      admin_settings: {
+        Row: {
+          id: string
+          password: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          id?: string
+          password?: string
+          updated_at?: string
+          username?: string
+        }
+        Update: {
+          id?: string
+          password?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      blocked_users: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string
+          id: string
+          password: string
+          remaining_searches: number | null
+          search_limit: number | null
+          updated_at: string
+          user_type: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password: string
+          remaining_searches?: number | null
+          search_limit?: number | null
+          updated_at?: string
+          user_type: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password?: string
+          remaining_searches?: number | null
+          search_limit?: number | null
+          updated_at?: string
+          user_type?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

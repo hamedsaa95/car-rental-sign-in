@@ -140,8 +140,8 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
     loadAdminCredentials();
   }, []);
 
-  const loadAdminCredentials = () => {
-    const credentials = getAdminCredentials();
+  const loadAdminCredentials = async () => {
+    const credentials = await getAdminCredentials();
     setAdminCredentials(credentials);
   };
 

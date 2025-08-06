@@ -1,6 +1,25 @@
 import { useState, useEffect } from 'react'
-import { supabase, User, BlockedUser } from '@/lib/supabase'
+import { supabase } from '@/integrations/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+
+export interface User {
+  id?: string
+  username: string
+  password: string
+  user_type: 'admin' | 'user'
+  search_limit?: number
+  remaining_searches?: number
+  created_at?: string
+}
+
+export interface BlockedUser {
+  id?: string
+  user_id: string
+  name: string
+  reason: string
+  created_at?: string
+  created_by?: string
+}
 
 export const useSupabase = () => {
   const { toast } = useToast()
@@ -8,74 +27,70 @@ export const useSupabase = () => {
   // تسجيل الدخول
   const login = async (username: string, password: string) => {
     try {
-      // التحقق من بيانات المدير المحفوظة
-      const adminCredentials = JSON.parse(localStorage.getItem('admin_credentials') || '{"username":"admin","password":"5971"}');
-      
-      if (username === adminCredentials.username && password === adminCredentials.password) {
+      // التحقق من إعدادات المدير في قاعدة البيانات
+      const { data: adminSettings } = await supabase
+        .from('admin_settings')
+        .select('*')
+        .limit(1)
+        .single();
+
+      if (adminSettings && username === adminSettings.username && password === adminSettings.password) {
         return {
           id: '1',
-          username: adminCredentials.username,
+          username: adminSettings.username,
           user_type: 'admin' as const,
           search_limit: null,
           remaining_searches: null
         };
       }
 
-      // التحقق من المستخدمين المحليين
-      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      const localUser = existingUsers.find((u: any) => 
-        u.username === username && u.password === password
-      );
-
-      if (localUser) {
-        return localUser;
-      }
-
-      // إذا لم يوجد محلياً، جرب Supabase مع timeout قصير
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('انتهت مهلة الاتصال')), 3000)
-      );
-
-      const loginPromise = supabase
+      // التحقق من المستخدمين في قاعدة البيانات
+      const { data: user, error } = await supabase
         .from('users')
         .select('*')
         .eq('username', username)
         .eq('password', password)
-        .single();
+        .maybeSingle();
 
-      const { data, error } = await Promise.race([loginPromise, timeoutPromise]) as any;
-
-      if (error) throw error
-      
-      return data;
-    } catch (error: any) {
-      if (error.message === 'انتهت مهلة الاتصال') {
-        throw new Error('لم يتم العثور على المستخدم');
+      if (error) {
+        console.error('Login error:', error);
+        throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
       }
+      
+      if (user) {
+        return user;
+      }
+
       throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
+    } catch (error: any) {
+      throw new Error(error.message || 'اسم المستخدم أو كلمة المرور غير صحيحة');
     }
   }
 
   // إنشاء مستخدم جديد
   const createUser = async (userData: Omit<User, 'id' | 'created_at'>) => {
     try {
-      // حفظ محلي مؤقت
-      const newUser = {
-        id: Date.now().toString(),
-        ...userData,
-        created_at: new Date().toISOString()
-      };
-
-      // محاكاة حفظ في localStorage
-      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      
       // التحقق من عدم وجود اسم المستخدم
-      if (existingUsers.find((u: any) => u.username === userData.username)) {
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('username', userData.username)
+        .maybeSingle();
+
+      if (existingUser) {
         throw new Error('اسم المستخدم موجود بالفعل');
       }
 
-      existingUsers.push(newUser);
-      localStorage.setItem('users', JSON.stringify(existingUsers));
+      // إنشاء المستخدم في قاعدة البيانات
+      const { data: newUser, error } = await supabase
+        .from('users')
+        .insert([userData])
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
 
       toast({
         title: "تم إنشاء الحساب بنجاح",
@@ -96,25 +111,20 @@ export const useSupabase = () => {
   // البحث عن مستخدم محظور
   const searchBlockedUser = async (userId: string) => {
     try {
-      // البحث المحلي أولاً
-      const existingBlocked = JSON.parse(localStorage.getItem('app_blocked') || '[]');
-      const localBlocked = existingBlocked.find((u: any) => u.user_id === userId);
-      
-      if (localBlocked) {
-        return localBlocked;
-      }
-
-      // جرب Supabase مع timeout قصير
       const { data, error } = await supabase
         .from('blocked_users')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) {
+        console.error('Error searching blocked user:', error);
+        return null;
+      }
       
       return data;
     } catch (error) {
+      console.error('Error searching blocked user:', error);
       return null;
     }
   }
@@ -122,28 +132,31 @@ export const useSupabase = () => {
   // إضافة مستخدم محظور
   const addBlockedUser = async (blockedUserData: Omit<BlockedUser, 'id' | 'created_at'>, addedBy?: string) => {
     try {
-      // حفظ محلي
-      const newBlocked = {
-        id: Date.now().toString(),
+      const dataToInsert = {
         ...blockedUserData,
-        created_at: new Date().toISOString(),
-        added_by: addedBy || 'unknown'
+        created_by: addedBy || 'unknown'
       };
 
-      const existingBlocked = JSON.parse(localStorage.getItem('app_blocked') || '[]');
-      existingBlocked.push(newBlocked);
-      localStorage.setItem('app_blocked', JSON.stringify(existingBlocked));
+      // إضافة المستخدم المحظور إلى قاعدة البيانات
+      const { data: newBlocked, error } = await supabase
+        .from('blocked_users')
+        .insert([dataToInsert])
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
 
       // تتبع نشاط الحسابات
       if (addedBy && addedBy !== 'admin') {
-        const accountActivity = JSON.parse(localStorage.getItem('accountActivity') || '[]');
-        accountActivity.push({
-          username: addedBy,
-          action: 'added_block',
-          blockedUserId: blockedUserData.user_id,
-          timestamp: new Date().toISOString()
-        });
-        localStorage.setItem('accountActivity', JSON.stringify(accountActivity));
+        await supabase
+          .from('account_activity')
+          .insert([{
+            username: addedBy,
+            action: 'added_block',
+            blocked_user_id: blockedUserData.user_id
+          }]);
       }
 
       toast({
@@ -165,9 +178,19 @@ export const useSupabase = () => {
   // الحصول على جميع المستخدمين المحظورين
   const getBlockedUsers = async () => {
     try {
-      const localBlocked = JSON.parse(localStorage.getItem('app_blocked') || '[]');
-      return localBlocked;
+      const { data, error } = await supabase
+        .from('blocked_users')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error getting blocked users:', error);
+        return [];
+      }
+
+      return data || [];
     } catch (error) {
+      console.error('Error getting blocked users:', error);
       return [];
     }
   }
@@ -175,9 +198,19 @@ export const useSupabase = () => {
   // الحصول على جميع المستخدمين
   const getUsers = async () => {
     try {
-      const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      return localUsers;
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error getting users:', error);
+        return [];
+      }
+
+      return data || [];
     } catch (error) {
+      console.error('Error getting users:', error);
       return [];
     }
   }
@@ -185,12 +218,14 @@ export const useSupabase = () => {
   // تحديث عدد البحثات المتبقية للمستخدم
   const updateUserSearches = async (userId: string, remainingSearches: number) => {
     try {
-      // تحديث محلي
-      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      const updatedUsers = existingUsers.map((user: any) => 
-        user.id === userId ? { ...user, remaining_searches: remainingSearches } : user
-      );
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      const { error } = await supabase
+        .from('users')
+        .update({ remaining_searches: remainingSearches })
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error updating user searches:', error);
+      }
     } catch (error: any) {
       console.error('Error updating user searches:', error);
     }
@@ -199,7 +234,17 @@ export const useSupabase = () => {
   // الحصول على نشاط الحسابات
   const getAccountActivity = async () => {
     try {
-      return JSON.parse(localStorage.getItem('accountActivity') || '[]');
+      const { data, error } = await supabase
+        .from('account_activity')
+        .select('*')
+        .order('timestamp', { ascending: false });
+
+      if (error) {
+        console.error('Error getting account activity:', error);
+        return [];
+      }
+
+      return data || [];
     } catch (error) {
       console.error('Error getting account activity:', error);
       return [];
@@ -209,9 +254,14 @@ export const useSupabase = () => {
   // حذف مستخدم
   const deleteUser = async (userId: string) => {
     try {
-      const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      const updatedUsers = existingUsers.filter((user: any) => user.id !== userId);
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      const { error } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
       
       toast({
         title: "تم الحذف بنجاح",
@@ -230,9 +280,14 @@ export const useSupabase = () => {
   // حذف مستخدم محظور
   const deleteBlockedUser = async (userId: string) => {
     try {
-      const existingBlocked = JSON.parse(localStorage.getItem('app_blocked') || '[]');
-      const updatedBlocked = existingBlocked.filter((user: any) => user.user_id !== userId);
-      localStorage.setItem('app_blocked', JSON.stringify(updatedBlocked));
+      const { error } = await supabase
+        .from('blocked_users')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
       
       toast({
         title: "تم إلغاء الحظر بنجاح",
@@ -251,12 +306,17 @@ export const useSupabase = () => {
   // تغيير بيانات المدير
   const updateAdminCredentials = async (newUsername: string, newPassword: string) => {
     try {
-      const adminCredentials = {
-        username: newUsername,
-        password: newPassword
-      };
+      const { error } = await supabase
+        .from('admin_settings')
+        .update({ 
+          username: newUsername,
+          password: newPassword 
+        })
+        .eq('id', (await supabase.from('admin_settings').select('id').limit(1).single()).data?.id);
       
-      localStorage.setItem('admin_credentials', JSON.stringify(adminCredentials));
+      if (error) {
+        throw new Error(error.message);
+      }
       
       toast({
         title: "تم تحديث بيانات المدير",
@@ -273,8 +333,22 @@ export const useSupabase = () => {
   }
 
   // الحصول على بيانات المدير الحالية
-  const getAdminCredentials = () => {
-    return JSON.parse(localStorage.getItem('admin_credentials') || '{"username":"admin","password":"5971"}');
+  const getAdminCredentials = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_settings')
+        .select('username, password')
+        .limit(1)
+        .single();
+
+      if (error || !data) {
+        return { username: 'admin', password: '5971' };
+      }
+
+      return { username: data.username, password: data.password };
+    } catch (error) {
+      return { username: 'admin', password: '5971' };
+    }
   }
 
   return {

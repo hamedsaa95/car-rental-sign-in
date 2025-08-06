@@ -39,8 +39,8 @@ const AdminSettingsPage = () => {
     loadSystemStats();
   }, []);
 
-  const loadAdminData = () => {
-    const credentials = getAdminCredentials();
+  const loadAdminData = async () => {
+    const credentials = await getAdminCredentials();
     setAdminCredentials(credentials);
   };
 
