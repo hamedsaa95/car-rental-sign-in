@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Plus, AlertCircle, CheckCircle, User as UserIcon } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
+import NewsTickerBar from "./NewsTickerBar";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabase } from "@/hooks/useSupabase";
 
@@ -231,8 +232,12 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-primary/5 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-primary/5">
+      {/* شريط الأخبار */}
+      <NewsTickerBar />
+      
+      <div className="p-4">
+        <div className="max-w-4xl mx-auto">
         {/* الهيدر */}
         <div className="flex justify-between items-center mb-8">
           <CarRentalLogo size="md" />
@@ -393,6 +398,7 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
             </CardContent>
           )}
         </Card>
+        </div>
       </div>
     </div>
   );
