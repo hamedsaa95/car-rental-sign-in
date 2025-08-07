@@ -8,6 +8,7 @@ import CarRentalLogo from "./CarRentalLogo";
 import NewsTickerBar from "./NewsTickerBar";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabase } from "@/hooks/useSupabase";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BlockedUser {
   id: string;
@@ -138,6 +139,44 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
   useEffect(() => {
     loadData();
     loadAdminCredentials();
+    
+    // إعداد real-time updates
+    const blockedUsersChannel = supabase
+      .channel('blocked_users_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'blocked_users' },
+        () => {
+          loadData(); // إعادة تحميل البيانات عند أي تغيير
+        }
+      )
+      .subscribe();
+
+    const usersChannel = supabase
+      .channel('users_changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'users' },
+        () => {
+          loadData(); // إعادة تحميل البيانات عند أي تغيير
+        }
+      )
+      .subscribe();
+
+    const activityChannel = supabase
+      .channel('activity_changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'account_activity' },
+        () => {
+          loadData(); // إعادة تحميل البيانات عند أي تغيير
+        }
+      )
+      .subscribe();
+
+    // تنظيف الاشتراكات عند إزالة المكون
+    return () => {
+      supabase.removeChannel(blockedUsersChannel);
+      supabase.removeChannel(usersChannel);
+      supabase.removeChannel(activityChannel);
+    };
   }, []);
 
   const loadAdminCredentials = async () => {

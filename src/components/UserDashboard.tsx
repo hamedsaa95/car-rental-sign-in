@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,9 +19,9 @@ interface BlockedUser {
 interface User {
   id?: string;
   username: string;
-  userType: 'admin' | 'user';
-  searchLimit?: number;
-  remainingSearches?: number;
+  user_type: 'admin' | 'user';
+  search_limit?: number;
+  remaining_searches?: number;
 }
 
 interface UserDashboardProps {
@@ -106,7 +107,7 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
     name: "",
     reason: ""
   });
-  const [remainingSearches, setRemainingSearches] = useState(user.remainingSearches || 0);
+  const [remainingSearches, setRemainingSearches] = useState(user.remaining_searches || 0);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { 
@@ -114,6 +115,28 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
     addBlockedUser, 
     updateUserSearches 
   } = useSupabase();
+
+  // إعداد real-time updates للمستخدمين
+  useEffect(() => {
+    const channel = supabase
+      .channel('user_blocked_updates')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'blocked_users' },
+        (payload) => {
+          // عند إضافة أو حذف مستخدم محظور، تحديث النتائج إذا كانت موجودة
+          if (searchResult && searchResult !== "not_found") {
+            if (payload.eventType === 'DELETE' && payload.old?.user_id === searchResult.id) {
+              setSearchResult("not_found");
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [searchResult]);
 
   const handleSearch = async () => {
     if (remainingSearches <= 0) {

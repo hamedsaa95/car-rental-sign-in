@@ -2,20 +2,22 @@ import { useState, useEffect } from "react";
 import LoginForm from "@/components/LoginForm";
 import AdminDashboard from "@/components/AdminDashboard";
 import UserDashboard from "@/components/UserDashboard";
+import { useAuth } from "@/hooks/useAuth";
 import NavigationBar from "@/components/NavigationBar";
 import GuidesPage from "./GuidesPage";
 import AdminSettingsPage from "./AdminSettingsPage";
 import { initializeData } from "@/lib/initData";
 
-interface User {
+export interface User {
+  id?: string;
   username: string;
-  userType: 'admin' | 'user';
-  searchLimit?: number;
-  remainingSearches?: number;
+  user_type: 'admin' | 'user';
+  search_limit?: number;
+  remaining_searches?: number;
 }
 
 const Index = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { user, isLoading, login, logout, updateUser } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
 
   // تهيئة البيانات الأولية
@@ -23,13 +25,13 @@ const Index = () => {
     initializeData();
   }, []);
 
-  const handleLogin = (user: User) => {
-    setCurrentUser(user);
+  const handleLogin = (userData: User) => {
+    login(userData);
     setCurrentPage('dashboard');
   };
 
   const handleLogout = () => {
-    setCurrentUser(null);
+    logout();
     setCurrentPage('dashboard');
   };
 
@@ -37,7 +39,18 @@ const Index = () => {
     setCurrentPage(page);
   };
 
-  if (!currentUser) {
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>جارٍ التحميل...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
     return <LoginForm onLogin={handleLogin} />;
   }
 
@@ -46,12 +59,12 @@ const Index = () => {
       case 'guides':
         return <GuidesPage />;
       case 'admin-settings':
-        return currentUser.userType === 'admin' ? <AdminSettingsPage /> : <GuidesPage />;
+        return user.user_type === 'admin' ? <AdminSettingsPage /> : <GuidesPage />;
       case 'dashboard':
       default:
-        return currentUser.userType === 'admin' ? 
+        return user.user_type === 'admin' ? 
           <AdminDashboard onLogout={handleLogout} /> : 
-          <UserDashboard user={currentUser} onLogout={handleLogout} />;
+          <UserDashboard user={user} onLogout={handleLogout} />;
     }
   };
 
@@ -61,7 +74,7 @@ const Index = () => {
         currentPage={currentPage}
         onNavigate={handleNavigate}
         onLogout={handleLogout}
-        userType={currentUser.userType}
+        userType={user.user_type}
       />
       {renderCurrentPage()}
     </div>

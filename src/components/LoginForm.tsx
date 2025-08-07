@@ -3,18 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Lock, User as UserIcon } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
 import { useToast } from "@/hooks/use-toast";
-
-
-interface User {
-  id?: string;
-  username: string;
-  userType: 'admin' | 'user';
-  searchLimit?: number;
-  remainingSearches?: number;
-}
+import { useSupabase } from "@/hooks/useSupabase";
+import type { User } from "../pages/Index";
 
 interface LoginFormProps {
   onLogin: (user: User) => void;
@@ -28,6 +21,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
     password: ""
   });
   const { toast } = useToast();
+  const { login } = useSupabase();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,13 +38,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
     setIsLoading(true);
     
     try {
-      // البحث عن المستخدم في localStorage
-      const users = JSON.parse(localStorage.getItem('users') || '[]');
-      const user = users.find((u: any) => u.username === formData.username && u.password === formData.password);
-      
-      if (!user) {
-        throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
-      }
+      const user = await login(formData.username, formData.password);
       
       toast({
         title: "تم تسجيل الدخول بنجاح",
@@ -58,11 +46,11 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
       });
       
       onLogin({
-        id: user.id || Date.now().toString(),
+        id: user.id,
         username: user.username,
-        userType: user.user_type,
-        searchLimit: user.search_limit || 5,
-        remainingSearches: user.remaining_searches || 5
+        user_type: user.user_type as 'admin' | 'user',
+        search_limit: user.search_limit,
+        remaining_searches: user.remaining_searches
       });
     } catch (error: any) {
       toast({
@@ -109,7 +97,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
                   اسم المستخدم
                 </Label>
                 <div className="relative">
-                  <User className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+                  <UserIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
                   <Input
                     id="username"
                     name="username"
