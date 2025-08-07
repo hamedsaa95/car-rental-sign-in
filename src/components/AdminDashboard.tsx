@@ -3,12 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Plus, User, AlertCircle, CheckCircle, UserPlus, Trash2, Settings } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, Plus, User, AlertCircle, CheckCircle, UserPlus, Trash2, Settings, MessageCircle } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
 import NewsTickerBar from "./NewsTickerBar";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabase } from "@/hooks/useSupabase";
 import { supabase } from "@/integrations/supabase/client";
+import SupportDashboard from "./SupportDashboard";
 
 interface BlockedUser {
   id: string;
@@ -544,8 +546,18 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
           </CardContent>
         </Card>
 
-        {/* إنشاء حساب جديد */}
-        <Card className="mb-6 bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
+        {/* التبويبات الرئيسية */}
+        <Tabs defaultValue="search" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="search">البحث والإدارة</TabsTrigger>
+            <TabsTrigger value="users">المستخدمين</TabsTrigger>
+            <TabsTrigger value="blocked">المحظورين</TabsTrigger>
+            <TabsTrigger value="support">الدعم المباشر</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="search" className="space-y-6">
+            {/* إنشاء حساب جديد */}
+            <Card className="bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
           <CardHeader>
             <div className="flex justify-between items-center">
               <div>
@@ -785,53 +797,12 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
           </CardContent>
         </Card>
 
-        {/* قائمة المحظورين الحالية */}
-        <Card className="bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              قائمة المحظورين ({blockedUsers.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-               {blockedUsers.map((user) => (
-                 <div key={user.user_id} className="p-3 bg-muted/30 rounded-lg border">
-                   <div className="flex justify-between items-start">
-                     <div className="space-y-1">
-                       <p className="font-medium">{user.name}</p>
-                       <p className="text-sm text-muted-foreground">{user.reason}</p>
-                       {user.added_by && (
-                         <p className="text-xs text-muted-foreground">
-                           أضيف بواسطة: {user.added_by}
-                         </p>
-                       )}
-                     </div>
-                     <div className="flex items-center gap-2">
-                       <span className="text-xs text-muted-foreground font-mono">
-                         {user.user_id}
-                       </span>
-                       <Button
-                         variant="outline"
-                         size="sm"
-                         onClick={() => handleDeleteBlockedUser(user.user_id, user.name)}
-                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                         disabled={isLoading}
-                       >
-                         <Trash2 className="h-4 w-4" />
-                       </Button>
-                     </div>
-                   </div>
-                 </div>
-               ))}
-               {blockedUsers.length === 0 && (
-                 <p className="text-center text-muted-foreground py-4">
-                   لا توجد مستخدمين محظورين
-                 </p>
-                )}
-            </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
+
+          <TabsContent value="support">
+            <SupportDashboard />
+          </TabsContent>
+        </Tabs>
         </div>
       </div>
     </div>

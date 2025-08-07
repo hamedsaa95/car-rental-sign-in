@@ -86,6 +86,81 @@ export type Database = {
         }
         Relationships: []
       }
+      support_chat_sessions: {
+        Row: {
+          admin_id: string | null
+          ended_at: string | null
+          id: string
+          last_activity: string
+          session_status: string
+          started_at: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          admin_id?: string | null
+          ended_at?: string | null
+          id?: string
+          last_activity?: string
+          session_status?: string
+          started_at?: string
+          user_id: string
+          user_name: string
+        }
+        Update: {
+          admin_id?: string | null
+          ended_at?: string | null
+          id?: string
+          last_activity?: string
+          session_status?: string
+          started_at?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
+      support_messages: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          id: string
+          message: string
+          message_type: string
+          priority: string
+          status: string
+          updated_at: string
+          user_id: string
+          user_name: string
+          user_type: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          message_type?: string
+          priority?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          user_name: string
+          user_type: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          message_type?: string
+          priority?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          user_name?: string
+          user_type?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           created_at: string
