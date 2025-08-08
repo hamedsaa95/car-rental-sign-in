@@ -799,6 +799,142 @@ const AdminDashboard = ({ onLogout }: AdminDashboardProps) => {
 
           </TabsContent>
 
+          <TabsContent value="users" className="space-y-6">
+            {/* قائمة المستخدمين */}
+            <Card className="bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  قائمة المستخدمين ({userAccounts.length})
+                </CardTitle>
+                <CardDescription>
+                  إدارة حسابات المستخدمين وحد البحثات الخاص بكل منهم
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">جاري تحميل البيانات...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {userAccounts.map((user, index) => (
+                      <div key={user.id || index} className="p-4 bg-muted/30 rounded-lg border">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-2">
+                            <p className="font-medium text-lg">{user.username}</p>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <p className="text-muted-foreground">
+                                <span className="font-medium">البحثات المتبقية:</span> {user.remaining_searches}
+                              </p>
+                              <p className="text-muted-foreground">
+                                <span className="font-medium">الحد الأقصى:</span> {user.search_limit}
+                              </p>
+                              <p className="text-muted-foreground">
+                                <span className="font-medium">كلمة المرور:</span> {user.password}
+                              </p>
+                              <p className="text-muted-foreground">
+                                <span className="font-medium">تاريخ الإنشاء:</span> {new Date(user.created_at).toLocaleDateString('ar-SA')}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteUser(user.id, user.username)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            disabled={isLoading}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            حذف
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    {userAccounts.length === 0 && (
+                      <div className="text-center py-8">
+                        <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground">لا توجد حسابات مستخدمين</p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          يمكنك إنشاء حساب جديد من تبويب "البحث والإدارة"
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="blocked" className="space-y-6">
+            {/* قائمة المحظورين */}
+            <Card className="bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  قائمة المحظورين ({blockedUsers.length})
+                </CardTitle>
+                <CardDescription>
+                  عرض وإدارة قائمة الأشخاص المحظورين في النظام
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">جاري تحميل البيانات...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {blockedUsers.map((user, index) => (
+                      <div key={user.id || index} className="p-4 bg-destructive/5 border border-destructive/20 rounded-lg">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-2">
+                            <p className="font-medium text-lg">{user.name}</p>
+                            <div className="grid grid-cols-1 gap-2 text-sm">
+                              <p className="text-muted-foreground">
+                                <span className="font-medium">الرقم التعريفي:</span> {user.user_id}
+                              </p>
+                              <p className="text-muted-foreground">
+                                <span className="font-medium">سبب الحظر:</span> {user.reason}
+                              </p>
+                              <p className="text-muted-foreground">
+                                <span className="font-medium">تاريخ الإضافة:</span> {new Date(user.created_at).toLocaleDateString('ar-SA')}
+                              </p>
+                              {user.created_by && (
+                                <p className="text-muted-foreground">
+                                  <span className="font-medium">أضيف بواسطة:</span> {user.created_by}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteBlockedUser(user.user_id, user.name)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            disabled={isLoading}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            إلغاء الحظر
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    {blockedUsers.length === 0 && (
+                      <div className="text-center py-8">
+                        <CheckCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground">لا توجد حسابات محظورة</p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          يمكنك إضافة حساب محظور من تبويب "البحث والإدارة"
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="support">
             <SupportDashboard />
           </TabsContent>
