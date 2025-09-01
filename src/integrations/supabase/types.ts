@@ -59,6 +59,36 @@ export type Database = {
         }
         Relationships: []
       }
+      advertisements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string
+          is_active: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       blocked_users: {
         Row: {
           created_at: string
@@ -83,6 +113,39 @@ export type Database = {
           name?: string
           reason?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      guest_support_messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -163,9 +226,11 @@ export type Database = {
       }
       users: {
         Row: {
+          company_name: string | null
           created_at: string
           id: string
           password: string
+          phone_number: string | null
           remaining_searches: number | null
           search_limit: number | null
           updated_at: string
@@ -173,9 +238,11 @@ export type Database = {
           username: string
         }
         Insert: {
+          company_name?: string | null
           created_at?: string
           id?: string
           password: string
+          phone_number?: string | null
           remaining_searches?: number | null
           search_limit?: number | null
           updated_at?: string
@@ -183,9 +250,11 @@ export type Database = {
           username: string
         }
         Update: {
+          company_name?: string | null
           created_at?: string
           id?: string
           password?: string
+          phone_number?: string | null
           remaining_searches?: number | null
           search_limit?: number | null
           updated_at?: string
