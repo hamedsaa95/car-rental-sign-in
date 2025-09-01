@@ -16,12 +16,14 @@ interface LoginFormProps {
 const LoginForm = ({ onLogin }: LoginFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
-    password: ""
+    password: "",
+    confirmPassword: ""
   });
   const { toast } = useToast();
-  const { login } = useSupabase();
+  const { login, createUser } = useSupabase();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,26 +37,67 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
       return;
     }
 
+    if (isRegisterMode) {
+      if (formData.password !== formData.confirmPassword) {
+        toast({
+          title: "خطأ",
+          description: "كلمتا المرور غير متطابقتان",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (formData.password.length < 4) {
+        toast({
+          title: "خطأ",
+          description: "يجب أن تكون كلمة المرور 4 أحرف على الأقل",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     setIsLoading(true);
     
     try {
-      const user = await login(formData.username, formData.password);
-      
-      toast({
-        title: "تم تسجيل الدخول بنجاح",
-        description: `مرحباً بك ${user.user_type === 'admin' ? 'في نظام الإدارة' : 'في النظام'}`
-      });
-      
-      onLogin({
-        id: user.id,
-        username: user.username,
-        user_type: user.user_type as 'admin' | 'user',
-        search_limit: user.search_limit,
-        remaining_searches: user.remaining_searches
-      });
+      if (isRegisterMode) {
+        // تسجيل مستخدم جديد
+        await createUser({
+          username: formData.username,
+          password: formData.password,
+          user_type: 'user',
+          search_limit: 10,
+          remaining_searches: 10
+        });
+        
+        toast({
+          title: "تم إنشاء الحساب بنجاح",
+          description: "يمكنك الآن تسجيل الدخول بحسابك الجديد"
+        });
+        
+        // العودة إلى وضع تسجيل الدخول
+        setIsRegisterMode(false);
+        setFormData({ username: formData.username, password: "", confirmPassword: "" });
+      } else {
+        // تسجيل الدخول
+        const user = await login(formData.username, formData.password);
+        
+        toast({
+          title: "تم تسجيل الدخول بنجاح",
+          description: `مرحباً بك ${user.user_type === 'admin' ? 'في نظام الإدارة' : 'في النظام'}`
+        });
+        
+        onLogin({
+          id: user.id,
+          username: user.username,
+          user_type: user.user_type as 'admin' | 'user',
+          search_limit: user.search_limit,
+          remaining_searches: user.remaining_searches
+        });
+      }
     } catch (error: any) {
       toast({
-        title: "خطأ في تسجيل الدخول",
+        title: isRegisterMode ? "خطأ في إنشاء الحساب" : "خطأ في تسجيل الدخول",
         description: error.message,
         variant: "destructive"
       });
@@ -70,6 +113,11 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
     }));
   };
 
+  const toggleMode = () => {
+    setIsRegisterMode(!isRegisterMode);
+    setFormData({ username: "", password: "", confirmPassword: "" });
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-primary/5 p-4">
       <div className="w-full max-w-md">
@@ -82,10 +130,10 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
         <Card className="bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
           <CardHeader className="text-center space-y-2">
             <CardTitle className="text-2xl font-bold text-foreground">
-              تسجيل الدخول
+              {isRegisterMode ? "إنشاء حساب جديد" : "تسجيل الدخول"}
             </CardTitle>
             <CardDescription className="text-muted-foreground">
-              ادخل بياناتك للوصول إلى نظام تأجير السيارات
+              {isRegisterMode ? "أنشئ حساباً جديداً للانضمام إلى النظام" : "ادخل بياناتك للوصول إلى نظام تأجير السيارات"}
             </CardDescription>
           </CardHeader>
           
@@ -138,23 +186,60 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
                 </div>
               </div>
 
+              {/* حقل تأكيد كلمة المرور - يظهر فقط في وضع التسجيل */}
+              {isRegisterMode && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
+                    تأكيد كلمة المرور
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      placeholder="أعد إدخال كلمة المرور"
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      className="pr-10 text-right bg-background/50 border-border focus:border-primary transition-colors"
+                      required={isRegisterMode}
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* زر تسجيل الدخول */}
               <Button 
                 type="submit" 
                 disabled={isLoading}
                 className="w-full bg-gradient-to-r from-primary to-primary-glow hover:from-primary/90 hover:to-primary-glow/90 text-primary-foreground font-medium py-3 shadow-glow transition-all duration-300 hover:shadow-lg disabled:opacity-50"
               >
-                {isLoading ? "جارٍ تسجيل الدخول..." : "تسجيل الدخول"}
+                {isLoading 
+                  ? (isRegisterMode ? "جارٍ إنشاء الحساب..." : "جارٍ تسجيل الدخول...") 
+                  : (isRegisterMode ? "إنشاء الحساب" : "تسجيل الدخول")
+                }
               </Button>
 
-              {/* رابط نسيت كلمة المرور */}
-              <div className="text-center">
+              {/* التبديل بين تسجيل الدخول وإنشاء حساب */}
+              <div className="text-center space-y-2">
                 <button
                   type="button"
+                  onClick={toggleMode}
                   className="text-sm text-primary hover:text-primary-glow transition-colors underline"
                 >
-                  نسيت كلمة المرور؟
+                  {isRegisterMode ? "لديك حساب؟ سجل الدخول" : "لا تملك حساباً؟ أنشئ حساباً جديداً"}
                 </button>
+                
+                {!isRegisterMode && (
+                  <div>
+                    <button
+                      type="button"
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors underline"
+                    >
+                      نسيت كلمة المرور؟
+                    </button>
+                  </div>
+                )}
               </div>
             </form>
           </CardContent>

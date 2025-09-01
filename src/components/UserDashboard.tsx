@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Plus, AlertCircle, CheckCircle, User as UserIcon } from "lucide-react";
+import { Search, Plus, AlertCircle, CheckCircle, User as UserIcon, MessageCircle, Send } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
 import NewsTickerBar from "./NewsTickerBar";
 import { useToast } from "@/hooks/use-toast";
@@ -116,6 +116,20 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
     updateUserSearches 
   } = useSupabase();
 
+  // حفظ حالة المستخدم في localStorage
+  useEffect(() => {
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    localStorage.setItem('remainingSearches', remainingSearches.toString());
+  }, [user, remainingSearches]);
+
+  // استرجاع البيانات المحفوظة عند التحميل
+  useEffect(() => {
+    const savedSearches = localStorage.getItem('remainingSearches');
+    if (savedSearches && !isNaN(parseInt(savedSearches))) {
+      setRemainingSearches(parseInt(savedSearches));
+    }
+  }, []);
+
   // إعداد real-time updates للمستخدمين
   useEffect(() => {
     const channel = supabase
@@ -137,6 +151,23 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
       supabase.removeChannel(channel);
     };
   }, [searchResult]);
+
+  const sendWhatsAppMessage = async (result: BlockedUser | "not_found") => {
+    try {
+      let message = "";
+      if (result === "not_found") {
+        message = `نتيجة البحث: غير مستدل\nالرقم التعريفي: ${searchId}\nالبحث تم في: ${new Date().toLocaleString('ar-SA')}`;
+      } else {
+        message = `نتيجة البحث: تم العثور على المستخدم\nالاسم: ${result.name}\nالرقم التعريفي: ${result.id}\nالسبب: ${result.reason}\nالبحث تم في: ${new Date().toLocaleString('ar-SA')}`;
+      }
+      
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+      window.open(whatsappUrl, '_blank');
+    } catch (error) {
+      console.error('خطأ في إرسال رسالة واتساب:', error);
+    }
+  };
 
   const handleSearch = async () => {
     if (remainingSearches <= 0) {
@@ -162,14 +193,18 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
     setIsLoading(true);
     try {
       const found = await searchBlockedUser(searchId);
+      let result: BlockedUser | "not_found";
+      
       if (found) {
-        setSearchResult({
+        result = {
           id: found.user_id,
           name: found.name,
           reason: found.reason
-        });
+        };
+        setSearchResult(result);
       } else {
-        setSearchResult("not_found");
+        result = "not_found";
+        setSearchResult(result);
       }
       
       const newCount = remainingSearches - 1;
@@ -179,6 +214,30 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
       if (user.id) {
         await updateUserSearches(user.id, newCount);
       }
+
+      // حفظ البيانات في localStorage
+      const searchHistory = JSON.parse(localStorage.getItem('searchHistory') || '[]');
+      const searchEntry = {
+        id: Date.now(),
+        searchId,
+        result,
+        timestamp: new Date().toISOString(),
+        user: user.username
+      };
+      searchHistory.unshift(searchEntry);
+      // الاحتفاظ بآخر 100 بحث
+      if (searchHistory.length > 100) {
+        searchHistory.splice(100);
+      }
+      localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+
+      // إرسال رسالة واتساب تلقائياً
+      await sendWhatsAppMessage(result);
+      
+      toast({
+        title: "تم البحث بنجاح",
+        description: "تم فتح واتساب لإرسال النتيجة",
+      });
     } catch (error) {
       toast({
         title: "خطأ في البحث",
@@ -334,6 +393,32 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
                       <p><span className="font-medium">السبب:</span> {searchResult.reason}</p>
                       <p><span className="font-medium">الرقم التعريفي:</span> {searchResult.id}</p>
                     </div>
+                    <div className="flex gap-2 mt-4">
+                      <Button
+                        onClick={() => sendWhatsAppMessage(searchResult)}
+                        size="sm"
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                        إرسال عبر واتساب
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* زر إرسال واتساب للنتائج غير المستدلة أيضاً */}
+                {searchResult === "not_found" && (
+                  <div className="mt-2">
+                    <Button
+                      onClick={() => sendWhatsAppMessage("not_found")}
+                      size="sm"
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <Send className="h-4 w-4" />
+                      إرسال النتيجة عبر واتساب
+                    </Button>
                   </div>
                 )}
               </div>
