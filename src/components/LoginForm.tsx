@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Eye, EyeOff, Lock, User as UserIcon } from "lucide-react";
+import { Eye, EyeOff, Lock, User as UserIcon, Phone, Building } from "lucide-react";
 import CarRentalLogo from "./CarRentalLogo";
+import GuestSupport from "./GuestSupport";
 import { useToast } from "@/hooks/use-toast";
 import { useSupabase } from "@/hooks/useSupabase";
 import type { User } from "../pages/Index";
@@ -20,7 +21,9 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
+    phoneNumber: "",
+    companyName: ""
   });
   const { toast } = useToast();
   const { login, createUser } = useSupabase();
@@ -67,7 +70,9 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
           password: formData.password,
           user_type: 'user',
           search_limit: 10,
-          remaining_searches: 10
+          remaining_searches: 10,
+          phone_number: formData.phoneNumber,
+          company_name: formData.companyName
         });
         
         toast({
@@ -77,7 +82,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
         
         // العودة إلى وضع تسجيل الدخول
         setIsRegisterMode(false);
-        setFormData({ username: formData.username, password: "", confirmPassword: "" });
+        setFormData({ username: formData.username, password: "", confirmPassword: "", phoneNumber: "", companyName: "" });
       } else {
         // تسجيل الدخول
         const user = await login(formData.username, formData.password);
@@ -115,7 +120,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
 
   const toggleMode = () => {
     setIsRegisterMode(!isRegisterMode);
-    setFormData({ username: "", password: "", confirmPassword: "" });
+    setFormData({ username: "", password: "", confirmPassword: "", phoneNumber: "", companyName: "" });
   };
 
   return (
@@ -124,6 +129,11 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
         {/* الشعار */}
         <div className="flex justify-center mb-8">
           <CarRentalLogo size="lg" />
+        </div>
+
+        {/* دعم الضيوف */}
+        <div className="flex justify-center mb-4">
+          <GuestSupport />
         </div>
 
         {/* نموذج تسجيل الدخول */}
@@ -206,6 +216,49 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
                     />
                   </div>
                 </div>
+              )}
+
+              {/* حقول إضافية للتسجيل */}
+              {isRegisterMode && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber" className="text-sm font-medium text-foreground">
+                      رقم الهاتف *
+                    </Label>
+                    <div className="relative">
+                      <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+                      <Input
+                        id="phoneNumber"
+                        name="phoneNumber"
+                        type="tel"
+                        placeholder="ادخل رقم الهاتف"
+                        value={formData.phoneNumber}
+                        onChange={handleInputChange}
+                        className="pr-10 text-right bg-background/50 border-border focus:border-primary transition-colors"
+                        required={isRegisterMode}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName" className="text-sm font-medium text-foreground">
+                      اسم الشركة *
+                    </Label>
+                    <div className="relative">
+                      <Building className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+                      <Input
+                        id="companyName"
+                        name="companyName"
+                        type="text"
+                        placeholder="ادخل اسم الشركة"
+                        value={formData.companyName}
+                        onChange={handleInputChange}
+                        className="pr-10 text-right bg-background/50 border-border focus:border-primary transition-colors"
+                        required={isRegisterMode}
+                      />
+                    </div>
+                  </div>
+                </>
               )}
 
               {/* زر تسجيل الدخول */}

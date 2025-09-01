@@ -99,6 +99,7 @@ const validateKuwaitiCivilId = (civilId: string): { isValid: boolean; birthDate?
 };
 
 const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
+  const [advertisements, setAdvertisements] = useState<any[]>([]);
   const [searchId, setSearchId] = useState("");
   const [searchResult, setSearchResult] = useState<BlockedUser | null | "not_found">(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -115,6 +116,26 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
     addBlockedUser, 
     updateUserSearches 
   } = useSupabase();
+
+  // جلب الإعلانات النشطة
+  const fetchActiveAdvertisements = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('advertisements')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAdvertisements(data || []);
+    } catch (error) {
+      console.error('خطأ في جلب الإعلانات:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchActiveAdvertisements();
+  }, []);
 
   // حفظ حالة المستخدم في localStorage
   useEffect(() => {
@@ -425,6 +446,34 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
             )}
           </CardContent>
         </Card>
+
+        {/* عرض الإعلانات */}
+        {advertisements.length > 0 && (
+          <Card className="bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
+            <CardHeader>
+              <CardTitle>إعلانات</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {advertisements.map((ad) => (
+                  <div key={ad.id} className="border rounded-lg overflow-hidden">
+                    <img 
+                      src={ad.image_url} 
+                      alt={ad.title}
+                      className="w-full h-48 object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = '/placeholder.svg';
+                      }}
+                    />
+                    <div className="p-4">
+                      <h3 className="font-medium text-center">{ad.title}</h3>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* إضافة بلوك جديد */}
         <Card className="bg-card/95 backdrop-blur-sm border-border/50 shadow-elegant">
