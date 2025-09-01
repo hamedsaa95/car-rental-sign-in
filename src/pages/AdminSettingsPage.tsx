@@ -10,8 +10,10 @@ import { useSupabase } from "@/hooks/useSupabase";
 
 const AdminSettingsPage = () => {
   const [adminCredentials, setAdminCredentials] = useState({
-    username: "",
-    password: ""
+    currentUsername: "",
+    currentPassword: "",
+    newUsername: "",
+    newPassword: ""
   });
   const [systemStats, setSystemStats] = useState({
     totalUsers: 0,
@@ -40,8 +42,14 @@ const AdminSettingsPage = () => {
   }, []);
 
   const loadAdminData = async () => {
-    const credentials = await getAdminCredentials();
-    setAdminCredentials(credentials);
+    // Since the new getAdminCredentials doesn't return password for security
+    // we initialize with empty values and let user input current credentials
+    setAdminCredentials({
+      currentUsername: "",
+      currentPassword: "",
+      newUsername: "",
+      newPassword: ""
+    });
   };
 
   const loadSystemStats = async () => {
@@ -63,7 +71,8 @@ const AdminSettingsPage = () => {
   };
 
   const handleUpdateCredentials = async () => {
-    if (!adminCredentials.username.trim() || !adminCredentials.password.trim()) {
+    if (!adminCredentials.currentUsername.trim() || !adminCredentials.currentPassword.trim() || 
+        !adminCredentials.newUsername.trim() || !adminCredentials.newPassword.trim()) {
       toast({
         title: "خطأ",
         description: "يرجى ملء جميع الحقول",
@@ -72,7 +81,7 @@ const AdminSettingsPage = () => {
       return;
     }
 
-    if (adminCredentials.username.length < 3) {
+    if (adminCredentials.newUsername.length < 3) {
       toast({
         title: "خطأ",
         description: "اسم المستخدم يجب أن يكون 3 أحرف على الأقل",
@@ -81,7 +90,7 @@ const AdminSettingsPage = () => {
       return;
     }
 
-    if (adminCredentials.password.length < 4) {
+    if (adminCredentials.newPassword.length < 4) {
       toast({
         title: "خطأ", 
         description: "كلمة المرور يجب أن تكون 4 أحرف على الأقل",
@@ -92,10 +101,22 @@ const AdminSettingsPage = () => {
 
     setIsLoading(true);
     try {
-      await updateAdminCredentials(adminCredentials.username, adminCredentials.password);
+      await updateAdminCredentials(
+        adminCredentials.currentUsername,
+        adminCredentials.currentPassword,
+        adminCredentials.newUsername,
+        adminCredentials.newPassword
+      );
       toast({
         title: "تم التحديث بنجاح",
         description: "تم تحديث بيانات المدير بنجاح"
+      });
+      // إعادة تعيين الحقول
+      setAdminCredentials({
+        currentUsername: "",
+        currentPassword: "",
+        newUsername: "",
+        newPassword: ""
       });
     } catch (error) {
       toast({
@@ -169,25 +190,51 @@ const AdminSettingsPage = () => {
             <div className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="adminUsername">اسم المستخدم</Label>
+                  <Label htmlFor="currentUsername">اسم المستخدم الحالي</Label>
                   <Input
-                    id="adminUsername"
+                    id="currentUsername"
                     type="text"
-                    placeholder="ادخل اسم المستخدم الجديد"
-                    value={adminCredentials.username}
-                    onChange={(e) => setAdminCredentials(prev => ({ ...prev, username: e.target.value }))}
+                    placeholder="ادخل اسم المستخدم الحالي"
+                    value={adminCredentials.currentUsername}
+                    onChange={(e) => setAdminCredentials(prev => ({ ...prev, currentUsername: e.target.value }))}
                     className="text-right"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="adminPassword">كلمة المرور</Label>
+                  <Label htmlFor="currentPassword">كلمة المرور الحالية</Label>
                   <Input
-                    id="adminPassword"
+                    id="currentPassword"
+                    type="password"
+                    placeholder="ادخل كلمة المرور الحالية"
+                    value={adminCredentials.currentPassword}
+                    onChange={(e) => setAdminCredentials(prev => ({ ...prev, currentPassword: e.target.value }))}
+                    className="text-right"
+                  />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="newUsername">اسم المستخدم الجديد</Label>
+                  <Input
+                    id="newUsername"
+                    type="text"
+                    placeholder="ادخل اسم المستخدم الجديد"
+                    value={adminCredentials.newUsername}
+                    onChange={(e) => setAdminCredentials(prev => ({ ...prev, newUsername: e.target.value }))}
+                    className="text-right"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
+                  <Input
+                    id="newPassword"
                     type="password"
                     placeholder="ادخل كلمة المرور الجديدة"
-                    value={adminCredentials.password}
-                    onChange={(e) => setAdminCredentials(prev => ({ ...prev, password: e.target.value }))}
+                    value={adminCredentials.newPassword}
+                    onChange={(e) => setAdminCredentials(prev => ({ ...prev, newPassword: e.target.value }))}
                     className="text-right"
                   />
                 </div>
@@ -196,7 +243,8 @@ const AdminSettingsPage = () => {
               <Button 
                 onClick={handleUpdateCredentials}
                 className="bg-gradient-to-r from-primary to-primary-glow"
-                disabled={!adminCredentials.username || !adminCredentials.password || isLoading}
+                disabled={!adminCredentials.currentUsername || !adminCredentials.currentPassword || 
+                         !adminCredentials.newUsername || !adminCredentials.newPassword || isLoading}
               >
                 {isLoading ? "جاري التحديث..." : "تحديث البيانات"}
               </Button>

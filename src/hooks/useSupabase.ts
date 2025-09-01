@@ -27,17 +27,17 @@ export const useSupabase = () => {
   // تسجيل الدخول
   const login = async (username: string, password: string) => {
     try {
-      // التحقق من إعدادات المدير في قاعدة البيانات
-      const { data: adminSettings } = await supabase
-        .from('admin_settings')
-        .select('*')
-        .limit(1)
-        .single();
+      // استخدام دالة التحقق الآمنة للمدير
+      const { data: adminResult, error: adminError } = await (supabase as any)
+        .rpc('authenticate_admin', {
+          username_input: username,
+          password_input: password
+        });
 
-      if (adminSettings && username === adminSettings.username && password === adminSettings.password) {
+      if (!adminError && adminResult && (adminResult as any).success) {
         return {
-          id: '1',
-          username: adminSettings.username,
+          id: (adminResult as any).user_id,
+          username: (adminResult as any).username,
           user_type: 'admin' as const,
           search_limit: null,
           remaining_searches: null
@@ -304,18 +304,18 @@ export const useSupabase = () => {
   };
 
   // تغيير بيانات المدير
-  const updateAdminCredentials = async (newUsername: string, newPassword: string) => {
+  const updateAdminCredentials = async (currentUsername: string, currentPassword: string, newUsername: string, newPassword: string) => {
     try {
-      const { error } = await supabase
-        .from('admin_settings')
-        .update({ 
-          username: newUsername,
-          password: newPassword 
-        })
-        .eq('id', (await supabase.from('admin_settings').select('id').limit(1).single()).data?.id);
+      const { data: result, error } = await (supabase as any)
+        .rpc('update_admin_credentials', {
+          current_username: currentUsername,
+          current_password: currentPassword,
+          new_username: newUsername,
+          new_password: newPassword
+        });
       
-      if (error) {
-        throw new Error(error.message);
+      if (error || !result || !(result as any).success) {
+        throw new Error((result as any)?.error || 'فشل في تحديث بيانات المدير');
       }
       
       toast({
@@ -325,29 +325,21 @@ export const useSupabase = () => {
     } catch (error: any) {
       toast({
         title: "خطأ",
-        description: "فشل في تحديث بيانات المدير",
+        description: error.message || "فشل في تحديث بيانات المدير",
         variant: "destructive"
       });
       throw error;
     }
   }
 
-  // الحصول على بيانات المدير الحالية
+  // الحصول على بيانات المدير الحالية (لا يُظهر كلمة المرور لأسباب أمنية)
   const getAdminCredentials = async () => {
     try {
-      const { data, error } = await supabase
-        .from('admin_settings')
-        .select('username, password')
-        .limit(1)
-        .single();
-
-      if (error || !data) {
-        return { username: 'admin', password: '5971' };
-      }
-
-      return { username: data.username, password: data.password };
+      // لا نعرض كلمة المرور لأسباب أمنية
+      // سيتم طلب كلمة المرور الحالية عند التحديث
+      return { username: 'admin', password: '' };
     } catch (error) {
-      return { username: 'admin', password: '5971' };
+      return { username: 'admin', password: '' };
     }
   }
 
