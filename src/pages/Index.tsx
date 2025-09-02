@@ -14,6 +14,8 @@ export interface User {
   user_type: 'admin' | 'user';
   search_limit?: number;
   remaining_searches?: number;
+  phone_number?: string;
+  company_name?: string;
 }
 
 const Index = () => {
@@ -63,7 +65,7 @@ const Index = () => {
       case 'dashboard':
       default:
         return user.user_type === 'admin' ? 
-          <AdminDashboard onLogout={handleLogout} /> : 
+          <AdminDashboard user={user} onLogout={handleLogout} /> : 
           <UserDashboard user={user} onLogout={handleLogout} />;
     }
   };
