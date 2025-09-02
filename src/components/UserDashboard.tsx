@@ -22,6 +22,8 @@ interface User {
   user_type: 'admin' | 'user';
   search_limit?: number;
   remaining_searches?: number;
+  phone_number?: string;
+  company_name?: string;
 }
 
 interface UserDashboardProps {
