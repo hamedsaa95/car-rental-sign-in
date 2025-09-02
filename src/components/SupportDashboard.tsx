@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { MessageCircle, Clock, User, Bot, AlertCircle, CheckCircle, X, Reply, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { SupportMessage, ChatSession } from '@/hooks/useSupportChat';
 
 const SupportDashboard: React.FC = () => {

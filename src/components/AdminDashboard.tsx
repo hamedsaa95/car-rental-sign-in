@@ -6,8 +6,11 @@ import CarRentalLogo from "./CarRentalLogo";
 import NewsTickerBar from "./NewsTickerBar";
 import SupportDashboard from "./SupportDashboard";
 import AdvertisementManager from "./AdvertisementManager";
+import UsersManagement from "./UsersManagement";
+import ActivityManagement from "./ActivityManagement";
 import AdminSettingsDialog from "./AdminSettingsDialog";
 import { useSupabase } from "@/hooks/useSupabase";
+import { supabase } from "@/integrations/supabase/client";
 
 interface User {
   id?: string;
@@ -25,7 +28,7 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard = ({ user, onLogout }: AdminDashboardProps) => {
-  const [currentView, setCurrentView] = useState<'overview' | 'support' | 'ads'>('overview');
+  const [currentView, setCurrentView] = useState<'overview' | 'support' | 'ads' | 'users' | 'activity'>('overview');
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalBlocked: 0,
@@ -44,16 +47,17 @@ const AdminDashboard = ({ user, onLogout }: AdminDashboardProps) => {
   const loadStats = async () => {
     setIsLoading(true);
     try {
-      const [blockedData, usersData, activityData] = await Promise.all([
+      const [blockedData, usersData, activityData, supportMessages] = await Promise.all([
         getBlockedUsers(),
         getUsers(),
-        getAccountActivity()
+        getAccountActivity(),
+        supabase.from('support_messages').select('*')
       ]);
       
       setStats({
         totalUsers: usersData.filter(user => user.user_type === 'user').length,
         totalBlocked: blockedData.length,
-        totalMessages: 0, // يمكن إضافة عداد للرسائل لاحقاً
+        totalMessages: supportMessages.data?.length || 0,
         totalActivity: activityData.length
       });
     } catch (error) {
@@ -73,6 +77,10 @@ const AdminDashboard = ({ user, onLogout }: AdminDashboardProps) => {
         return <SupportDashboard />;
       case 'ads':
         return <AdvertisementManager username={user.username} />;
+      case 'users':
+        return <UsersManagement />;
+      case 'activity':
+        return <ActivityManagement />;
       default:
         return (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -157,6 +165,20 @@ const AdminDashboard = ({ user, onLogout }: AdminDashboardProps) => {
                 size="sm"
               >
                 إدارة الإعلانات
+              </Button>
+              <Button 
+                onClick={() => setCurrentView('users')}
+                variant={currentView === 'users' ? "default" : "outline"}
+                size="sm"
+              >
+                إدارة المستخدمين
+              </Button>
+              <Button 
+                onClick={() => setCurrentView('activity')}
+                variant={currentView === 'activity' ? "default" : "outline"}
+                size="sm"
+              >
+                النشاط
               </Button>
               <AdminSettingsDialog isOpen={false} onClose={() => {}} />
               <Button onClick={onLogout} variant="outline" size="sm">
