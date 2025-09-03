@@ -272,6 +272,18 @@ export type Database = {
         Args: { password_input: string; username_input: string }
         Returns: Json
       }
+      authenticate_admin_secure: {
+        Args: { password_input: string; username_input: string }
+        Returns: Json
+      }
+      hash_password: {
+        Args: { password: string }
+        Returns: string
+      }
+      verify_password: {
+        Args: { hash: string; password: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

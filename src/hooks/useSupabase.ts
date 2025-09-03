@@ -29,41 +29,50 @@ export const useSupabase = () => {
   // تسجيل الدخول
   const login = async (username: string, password: string) => {
     try {
-      // استخدام دالة التحقق الآمنة للمدير
-      const { data: adminResult, error: adminError } = await (supabase as any)
-        .rpc('authenticate_admin', {
-          username_input: username,
-          password_input: password
+      if (username === 'admin') {
+        // استخدام دالة التحقق الآمنة للمدير مع كلمات المرور المشفرة
+        const { data: adminResult, error: adminError } = await (supabase as any)
+          .rpc('authenticate_admin_secure', {
+            username_input: username,
+            password_input: password
+          });
+
+        if (!adminError && adminResult && (adminResult as any).success) {
+          return {
+            id: (adminResult as any).user_id,
+            username: (adminResult as any).username,
+            user_type: 'admin' as const,
+            search_limit: null,
+            remaining_searches: null
+          };
+        } else {
+          throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
+        }
+      } else {
+        // التحقق من المستخدمين العاديين مع التحقق من كلمة المرور المشفرة
+        const { data: user, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('username', username)
+          .maybeSingle();
+
+        if (error || !user) {
+          console.error('Login error:', error);
+          throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
+        }
+
+        // التحقق من كلمة المرور باستخدام دالة التحقق الآمنة
+        const { data: passwordValid, error: verifyError } = await (supabase as any).rpc('verify_password', {
+          password: password,
+          hash: user.password
         });
 
-      if (!adminError && adminResult && (adminResult as any).success) {
-        return {
-          id: (adminResult as any).user_id,
-          username: (adminResult as any).username,
-          user_type: 'admin' as const,
-          search_limit: null,
-          remaining_searches: null
-        };
-      }
+        if (verifyError || !passwordValid) {
+          throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
+        }
 
-      // التحقق من المستخدمين في قاعدة البيانات
-      const { data: user, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('username', username)
-        .eq('password', password)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Login error:', error);
-        throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
-      }
-      
-      if (user) {
         return user;
       }
-
-      throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
     } catch (error: any) {
       throw new Error(error.message || 'اسم المستخدم أو كلمة المرور غير صحيحة');
     }
