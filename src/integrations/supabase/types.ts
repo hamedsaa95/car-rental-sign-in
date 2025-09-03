@@ -280,9 +280,44 @@ export type Database = {
         Args: { password_input: string; username_input: string }
         Returns: Json
       }
+      delete_user_admin: {
+        Args: { user_id_input: string }
+        Returns: Json
+      }
+      get_all_users_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          company_name: string
+          created_at: string
+          id: string
+          phone_number: string
+          remaining_searches: number
+          search_limit: number
+          updated_at: string
+          user_type: string
+          username: string
+        }[]
+      }
+      get_user_for_auth: {
+        Args: { username_input: string }
+        Returns: {
+          company_name: string
+          id: string
+          password: string
+          phone_number: string
+          remaining_searches: number
+          search_limit: number
+          user_type: string
+          username: string
+        }[]
+      }
       hash_password: {
         Args: { password: string }
         Returns: string
+      }
+      update_user_searches_admin: {
+        Args: { remaining_searches_input: number; user_id_input: string }
+        Returns: Json
       }
       verify_password: {
         Args: { hash: string; password: string }

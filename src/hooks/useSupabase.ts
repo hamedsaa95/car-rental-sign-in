@@ -49,29 +49,26 @@ export const useSupabase = () => {
           throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
         }
       } else {
-        // التحقق من المستخدمين العاديين مع التحقق من كلمة المرور المشفرة
-        const { data: user, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('username', username)
-          .maybeSingle();
+        // استخدام دالة التحقق الآمنة للمستخدمين العاديين
+        const { data: userResult, error: userError } = await (supabase as any)
+          .rpc('authenticate_user_secure', {
+            username_input: username,
+            password_input: password
+          });
 
-        if (error || !user) {
-          console.error('Login error:', error);
+        if (userError || !userResult || !userResult.success) {
           throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
         }
 
-        // التحقق من كلمة المرور باستخدام دالة التحقق الآمنة
-        const { data: passwordValid, error: verifyError } = await (supabase as any).rpc('verify_password', {
-          password: password,
-          hash: user.password
-        });
-
-        if (verifyError || !passwordValid) {
-          throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
-        }
-
-        return user;
+        return {
+          id: userResult.id,
+          username: userResult.username,
+          user_type: userResult.user_type,
+          search_limit: userResult.search_limit,
+          remaining_searches: userResult.remaining_searches,
+          phone_number: userResult.phone_number,
+          company_name: userResult.company_name
+        };
       }
     } catch (error: any) {
       throw new Error(error.message || 'اسم المستخدم أو كلمة المرور غير صحيحة');
@@ -81,14 +78,15 @@ export const useSupabase = () => {
   // إنشاء مستخدم جديد
   const createUser = async (userData: Omit<User, 'id' | 'created_at'>) => {
     try {
-      // التحقق من عدم وجود اسم المستخدم
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('id')
-        .eq('username', userData.username)
-        .maybeSingle();
+      // التحقق من عدم وجود اسم المستخدم باستخدام دالة آمنة
+      const { data: existingUser, error: checkError } = await (supabase as any)
+        .rpc('get_user_for_auth', {
+          username_input: userData.username
+        });
 
-      if (existingUser) {
+      if (checkError) {
+        console.error('Error checking username:', checkError);
+      } else if (existingUser && existingUser.length > 0) {
         throw new Error('اسم المستخدم موجود بالفعل');
       }
 
@@ -206,13 +204,11 @@ export const useSupabase = () => {
     }
   }
 
-  // الحصول على جميع المستخدمين
+  // الحصول على جميع المستخدمين (للمدير فقط)
   const getUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await (supabase as any)
+        .rpc('get_all_users_admin');
 
       if (error) {
         console.error('Error getting users:', error);
@@ -229,12 +225,13 @@ export const useSupabase = () => {
   // تحديث عدد البحثات المتبقية للمستخدم
   const updateUserSearches = async (userId: string, remainingSearches: number) => {
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ remaining_searches: remainingSearches })
-        .eq('id', userId);
+      const { data: result, error } = await (supabase as any)
+        .rpc('update_user_searches_admin', {
+          user_id_input: userId,
+          remaining_searches_input: remainingSearches
+        });
 
-      if (error) {
+      if (error || !result?.success) {
         console.error('Error updating user searches:', error);
       }
     } catch (error: any) {
@@ -262,16 +259,16 @@ export const useSupabase = () => {
     }
   };
 
-  // حذف مستخدم
+  // حذف مستخدم (للمدير فقط)
   const deleteUser = async (userId: string) => {
     try {
-      const { error } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', userId);
+      const { data: result, error } = await (supabase as any)
+        .rpc('delete_user_admin', {
+          user_id_input: userId
+        });
 
-      if (error) {
-        throw new Error(error.message);
+      if (error || !result?.success) {
+        throw new Error(result?.error || 'فشل في حذف المستخدم');
       }
       
       toast({
