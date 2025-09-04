@@ -315,6 +315,15 @@ export type Database = {
         Args: { password: string }
         Returns: string
       }
+      update_admin_credentials: {
+        Args: {
+          current_password: string
+          current_username: string
+          new_password: string
+          new_username: string
+        }
+        Returns: Json
+      }
       update_user_searches_admin: {
         Args: { remaining_searches_input: number; user_id_input: string }
         Returns: Json
