@@ -30,9 +30,9 @@ export const useSupabase = () => {
   const login = async (username: string, password: string) => {
     try {
       if (username === 'admin') {
-        // استخدام دالة التحقق الآمنة للمدير مع كلمات المرور المشفرة
+        // استخدام دالة التحقق المبسطة للمدير
         const { data: adminResult, error: adminError } = await (supabase as any)
-          .rpc('authenticate_admin_secure', {
+          .rpc('authenticate_admin_simple', {
             username_input: username,
             password_input: password
           });
@@ -49,9 +49,9 @@ export const useSupabase = () => {
           throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
         }
       } else {
-        // استخدام دالة التحقق الآمنة للمستخدمين العاديين
+        // استخدام دالة التحقق المبسطة للمستخدمين العاديين
         const { data: userResult, error: userError } = await (supabase as any)
-          .rpc('authenticate_user_secure', {
+          .rpc('authenticate_user_simple', {
             username_input: username,
             password_input: password
           });
@@ -78,11 +78,12 @@ export const useSupabase = () => {
   // إنشاء مستخدم جديد
   const createUser = async (userData: Omit<User, 'id' | 'created_at'>) => {
     try {
-      // التحقق من عدم وجود اسم المستخدم باستخدام دالة آمنة
-      const { data: existingUser, error: checkError } = await (supabase as any)
-        .rpc('get_user_for_auth', {
-          username_input: userData.username
-        });
+      // التحقق من عدم وجود اسم المستخدم
+      const { data: existingUser, error: checkError } = await supabase
+        .from('users')
+        .select('username')
+        .eq('username', userData.username)
+        .limit(1);
 
       if (checkError) {
         console.error('Error checking username:', checkError);

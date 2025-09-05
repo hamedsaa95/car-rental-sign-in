@@ -276,7 +276,15 @@ export type Database = {
         Args: { password_input: string; username_input: string }
         Returns: Json
       }
+      authenticate_admin_simple: {
+        Args: { password_input: string; username_input: string }
+        Returns: Json
+      }
       authenticate_user_secure: {
+        Args: { password_input: string; username_input: string }
+        Returns: Json
+      }
+      authenticate_user_simple: {
         Args: { password_input: string; username_input: string }
         Returns: Json
       }
