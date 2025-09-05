@@ -69,8 +69,8 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
           username: formData.username,
           password: formData.password,
           user_type: 'user',
-          search_limit: 10,
-          remaining_searches: 10,
+          search_limit: 1000,
+          remaining_searches: 1000,
           phone_number: formData.phoneNumber,
           company_name: formData.companyName
         });

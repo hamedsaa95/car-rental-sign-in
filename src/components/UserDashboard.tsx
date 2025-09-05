@@ -254,12 +254,9 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
       }
       localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
 
-      // إرسال رسالة واتساب تلقائياً
-      await sendWhatsAppMessage(result);
-      
       toast({
         title: "تم البحث بنجاح",
-        description: "تم فتح واتساب لإرسال النتيجة",
+        description: "استخدم زر الإرسال لمشاركة النتيجة عبر واتساب",
       });
     } catch (error) {
       toast({

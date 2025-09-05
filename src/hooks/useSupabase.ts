@@ -90,10 +90,16 @@ export const useSupabase = () => {
         throw new Error('اسم المستخدم موجود بالفعل');
       }
 
-      // إنشاء المستخدم في قاعدة البيانات
+  // إنشاء المستخدم في قاعدة البيانات مع القيم الافتراضية الجديدة
+      const userDataWithDefaults = {
+        ...userData,
+        search_limit: userData.search_limit || 1000,
+        remaining_searches: userData.remaining_searches || 1000
+      };
+
       const { data: newUser, error } = await supabase
         .from('users')
-        .insert([userData])
+        .insert([userDataWithDefaults])
         .select()
         .single();
 
