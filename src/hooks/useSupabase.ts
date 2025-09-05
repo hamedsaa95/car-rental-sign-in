@@ -29,6 +29,7 @@ export const useSupabase = () => {
   // تسجيل الدخول
   const login = async (username: string, password: string) => {
     console.log('Attempting login for:', username);
+    console.log('Attempting login for:', username);
     try {
       if (username === 'admin') {
         // استخدام دالة التحقق المبسطة للمدير
@@ -39,6 +40,8 @@ export const useSupabase = () => {
           });
         
         console.log('Admin authentication result:', adminResult);
+        console.log('Admin login result:', adminResult, 'Error:', adminError);
+        
         if (!adminError && adminResult && (adminResult as any).success) {
           return {
             id: (adminResult as any).user_id,
@@ -58,6 +61,8 @@ export const useSupabase = () => {
             password_input: password
           });
 
+        console.log('User login result:', userResult, 'Error:', userError);
+
         if (userError || !userResult || !userResult.success) {
           throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
         }
@@ -73,6 +78,7 @@ export const useSupabase = () => {
         };
       }
     } catch (error: any) {
+      console.error('Login error:', error);
       throw new Error(error.message || 'اسم المستخدم أو كلمة المرور غير صحيحة');
     }
   }
