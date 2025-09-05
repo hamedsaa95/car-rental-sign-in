@@ -28,6 +28,7 @@ export const useSupabase = () => {
 
   // تسجيل الدخول
   const login = async (username: string, password: string) => {
+    console.log('Attempting login for:', username);
     try {
       if (username === 'admin') {
         // استخدام دالة التحقق المبسطة للمدير
@@ -36,7 +37,8 @@ export const useSupabase = () => {
             username_input: username,
             password_input: password
           });
-
+        
+        console.log('Admin authentication result:', adminResult);
         if (!adminError && adminResult && (adminResult as any).success) {
           return {
             id: (adminResult as any).user_id,
@@ -321,16 +323,28 @@ export const useSupabase = () => {
   // تغيير بيانات المدير
   const updateAdminCredentials = async (currentUsername: string, currentPassword: string, newUsername: string, newPassword: string) => {
     try {
-      const { data: result, error } = await (supabase as any)
-        .rpc('update_admin_credentials', {
-          current_username: currentUsername,
-          current_password: currentPassword,
-          new_username: newUsername,
-          new_password: newPassword
+      // التحقق من بيانات المدير الحالية أولاً
+      const { data: verifyResult, error: verifyError } = await (supabase as any)
+        .rpc('authenticate_admin_simple', {
+          username_input: currentUsername,
+          password_input: currentPassword
         });
+
+      if (verifyError || !verifyResult || !(verifyResult as any).success) {
+        throw new Error('بيانات المدير الحالية غير صحيحة');
+      }
+
+      // تحديث بيانات المدير
+      const { error: updateError } = await supabase
+        .from('admin_settings')
+        .update({
+          username: newUsername,
+          password: newPassword
+        })
+        .eq('username', currentUsername);
       
-      if (error || !result || !(result as any).success) {
-        throw new Error((result as any)?.error || 'فشل في تحديث بيانات المدير');
+      if (updateError) {
+        throw new Error('فشل في تحديث بيانات المدير');
       }
       
       toast({
