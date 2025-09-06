@@ -85,6 +85,7 @@ export const useSupabase = () => {
 
   // إنشاء مستخدم جديد
   const createUser = async (userData: Omit<User, 'id' | 'created_at'>) => {
+    console.log('Creating user with data:', userData);
     try {
       // التحقق من عدم وجود اسم المستخدم
       const { data: existingUser, error: checkError } = await supabase
@@ -112,7 +113,10 @@ export const useSupabase = () => {
         .select()
         .single();
 
+      console.log('Insert result:', newUser, 'Error:', error);
+      
       if (error) {
+        console.error('Database insert error:', error);
         throw new Error(error.message);
       }
 
@@ -123,6 +127,7 @@ export const useSupabase = () => {
 
       return newUser;
     } catch (error: any) {
+      console.error('Full createUser error:', error);
       toast({
         title: "خطأ في إنشاء الحساب",
         description: error.message,
