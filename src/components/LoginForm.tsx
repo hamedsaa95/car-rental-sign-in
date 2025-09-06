@@ -64,6 +64,15 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
     
     try {
       if (isRegisterMode) {
+        console.log('Attempting to create user with data:', {
+          username: formData.username,
+          password: formData.password,
+          user_type: 'user',
+          search_limit: 1000,
+          remaining_searches: 1000,
+          phone_number: formData.phoneNumber,
+          company_name: formData.companyName
+        });
         // تسجيل مستخدم جديد
         await createUser({
           username: formData.username,
