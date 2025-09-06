@@ -29,7 +29,6 @@ export const useSupabase = () => {
   // تسجيل الدخول
   const login = async (username: string, password: string) => {
     console.log('Attempting login for:', username);
-    console.log('Attempting login for:', username);
     try {
       if (username === 'admin') {
         // استخدام دالة التحقق المبسطة للمدير
@@ -40,7 +39,6 @@ export const useSupabase = () => {
           });
         
         console.log('Admin authentication result:', adminResult);
-        console.log('Admin login result:', adminResult, 'Error:', adminError);
         
         if (!adminError && adminResult && (adminResult as any).success) {
           return {
@@ -61,8 +59,7 @@ export const useSupabase = () => {
             password_input: password
           });
 
-        console.log('User login result:', userResult, 'Error:', userError);
-
+        
         if (userError || !userResult || !userResult.success) {
           throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
         }
@@ -78,14 +75,12 @@ export const useSupabase = () => {
         };
       }
     } catch (error: any) {
-      console.error('Login error:', error);
       throw new Error(error.message || 'اسم المستخدم أو كلمة المرور غير صحيحة');
     }
   }
 
   // إنشاء مستخدم جديد
   const createUser = async (userData: Omit<User, 'id' | 'created_at'>) => {
-    console.log('Creating user with data:', userData);
     try {
       // التحقق من عدم وجود اسم المستخدم
       const { data: existingUser, error: checkError } = await supabase
@@ -113,10 +108,8 @@ export const useSupabase = () => {
         .select()
         .single();
 
-      console.log('Insert result:', newUser, 'Error:', error);
       
       if (error) {
-        console.error('Database insert error:', error);
         throw new Error(error.message);
       }
 
@@ -127,7 +120,6 @@ export const useSupabase = () => {
 
       return newUser;
     } catch (error: any) {
-      console.error('Full createUser error:', error);
       toast({
         title: "خطأ في إنشاء الحساب",
         description: error.message,
