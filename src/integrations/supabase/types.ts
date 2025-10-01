@@ -268,6 +268,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_blocked_user_secure: {
+        Args: {
+          created_by_input?: string
+          name_input: string
+          reason_input: string
+          user_id_input: string
+        }
+        Returns: Json
+      }
       authenticate_admin: {
         Args: { password_input: string; username_input: string }
         Returns: Json
@@ -318,6 +327,17 @@ export type Database = {
           username: string
         }[]
       }
+      get_blocked_users_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          reason: string
+          user_id: string
+        }[]
+      }
       get_user_for_auth: {
         Args: { username_input: string }
         Returns: {
@@ -334,6 +354,14 @@ export type Database = {
       hash_password: {
         Args: { password: string }
         Returns: string
+      }
+      remove_blocked_user_secure: {
+        Args: { user_id_input: string }
+        Returns: Json
+      }
+      search_blocked_user_secure: {
+        Args: { user_id_input: string }
+        Returns: Json
       }
       update_admin_credentials: {
         Args: {

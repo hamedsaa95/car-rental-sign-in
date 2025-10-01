@@ -117,18 +117,17 @@ export const useSupabase = () => {
   // البحث عن مستخدم محظور
   const searchBlockedUser = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('blocked_users')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+      const { data: result, error } = await (supabase as any)
+        .rpc('search_blocked_user_secure', {
+          user_id_input: userId
+        });
 
-      if (error) {
+      if (error || !result || !result.success) {
         console.error('Error searching blocked user:', error);
         return null;
       }
       
-      return data;
+      return result.blocked ? result.blocked_user : null;
     } catch (error) {
       console.error('Error searching blocked user:', error);
       return null;
@@ -138,20 +137,17 @@ export const useSupabase = () => {
   // إضافة مستخدم محظور
   const addBlockedUser = async (blockedUserData: Omit<BlockedUser, 'id' | 'created_at'>, addedBy?: string) => {
     try {
-      const dataToInsert = {
-        ...blockedUserData,
-        created_by: addedBy || 'unknown'
-      };
+      // استخدام دالة آمنة لإضافة مستخدم محظور
+      const { data: result, error } = await (supabase as any)
+        .rpc('add_blocked_user_secure', {
+          user_id_input: blockedUserData.user_id,
+          name_input: blockedUserData.name,
+          reason_input: blockedUserData.reason,
+          created_by_input: addedBy || 'unknown'
+        });
 
-      // إضافة المستخدم المحظور إلى قاعدة البيانات
-      const { data: newBlocked, error } = await supabase
-        .from('blocked_users')
-        .insert([dataToInsert])
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
+      if (error || !result || !result.success) {
+        throw new Error(result?.error || 'فشل في إضافة المستخدم المحظور');
       }
 
       // تتبع نشاط الحسابات
@@ -170,7 +166,7 @@ export const useSupabase = () => {
         description: `تم حظر المستخدم ${blockedUserData.user_id}`
       });
 
-      return newBlocked;
+      return result.blocked_user;
     } catch (error: any) {
       toast({
         title: "خطأ في إضافة البلوك",
@@ -184,10 +180,8 @@ export const useSupabase = () => {
   // الحصول على جميع المستخدمين المحظورين
   const getBlockedUsers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('blocked_users')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await (supabase as any)
+        .rpc('get_blocked_users_admin');
 
       if (error) {
         console.error('Error getting blocked users:', error);
@@ -285,13 +279,13 @@ export const useSupabase = () => {
   // حذف مستخدم محظور
   const deleteBlockedUser = async (userId: string) => {
     try {
-      const { error } = await supabase
-        .from('blocked_users')
-        .delete()
-        .eq('user_id', userId);
+      const { data: result, error } = await (supabase as any)
+        .rpc('remove_blocked_user_secure', {
+          user_id_input: userId
+        });
 
-      if (error) {
-        throw new Error(error.message);
+      if (error || !result?.success) {
+        throw new Error(result?.error || 'فشل في إلغاء الحظر');
       }
       
       toast({
