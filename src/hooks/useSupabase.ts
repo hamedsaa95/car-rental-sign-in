@@ -82,35 +82,20 @@ export const useSupabase = () => {
   // إنشاء مستخدم جديد
   const createUser = async (userData: Omit<User, 'id' | 'created_at'>) => {
     try {
-      // التحقق من عدم وجود اسم المستخدم
-      const { data: existingUser, error: checkError } = await supabase
-        .from('users')
-        .select('username')
-        .eq('username', userData.username)
-        .limit(1);
+      // استخدام دالة آمنة لإنشاء المستخدم
+      const { data: result, error } = await (supabase as any)
+        .rpc('create_user_secure', {
+          username_input: userData.username,
+          password_input: userData.password,
+          user_type_input: userData.user_type,
+          search_limit_input: userData.search_limit || 1000,
+          remaining_searches_input: userData.remaining_searches || 1000,
+          phone_number_input: userData.phone_number || null,
+          company_name_input: userData.company_name || null
+        });
 
-      if (checkError) {
-        console.error('Error checking username:', checkError);
-      } else if (existingUser && existingUser.length > 0) {
-        throw new Error('اسم المستخدم موجود بالفعل');
-      }
-
-  // إنشاء المستخدم في قاعدة البيانات مع القيم الافتراضية الجديدة
-      const userDataWithDefaults = {
-        ...userData,
-        search_limit: userData.search_limit || 1000,
-        remaining_searches: userData.remaining_searches || 1000
-      };
-
-      const { data: newUser, error } = await supabase
-        .from('users')
-        .insert([userDataWithDefaults])
-        .select()
-        .single();
-
-      
-      if (error) {
-        throw new Error(error.message);
+      if (error || !result || !result.success) {
+        throw new Error(result?.error || 'فشل في إنشاء المستخدم');
       }
 
       toast({
@@ -118,7 +103,7 @@ export const useSupabase = () => {
         description: `تم إنشاء حساب ${userData.username}`
       });
 
-      return newUser;
+      return result.user;
     } catch (error: any) {
       toast({
         title: "خطأ في إنشاء الحساب",

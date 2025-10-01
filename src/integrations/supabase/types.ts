@@ -288,6 +288,18 @@ export type Database = {
         Args: { password_input: string; username_input: string }
         Returns: Json
       }
+      create_user_secure: {
+        Args: {
+          company_name_input?: string
+          password_input: string
+          phone_number_input?: string
+          remaining_searches_input?: number
+          search_limit_input?: number
+          user_type_input: string
+          username_input: string
+        }
+        Returns: Json
+      }
       delete_user_admin: {
         Args: { user_id_input: string }
         Returns: Json
