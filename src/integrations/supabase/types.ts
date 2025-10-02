@@ -268,6 +268,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_advertisement_secure: {
+        Args: {
+          created_by_input?: string
+          image_url_input: string
+          title_input: string
+        }
+        Returns: Json
+      }
       add_blocked_user_secure: {
         Args: {
           created_by_input?: string
@@ -309,9 +317,25 @@ export type Database = {
         }
         Returns: Json
       }
+      delete_advertisement_secure: {
+        Args: { ad_id_input: string }
+        Returns: Json
+      }
       delete_user_admin: {
         Args: { user_id_input: string }
         Returns: Json
+      }
+      get_all_advertisements_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          created_by: string
+          id: string
+          image_url: string
+          is_active: boolean
+          title: string
+          updated_at: string
+        }[]
       }
       get_all_users_admin: {
         Args: Record<PropertyKey, never>
@@ -361,6 +385,10 @@ export type Database = {
       }
       search_blocked_user_secure: {
         Args: { user_id_input: string }
+        Returns: Json
+      }
+      toggle_advertisement_secure: {
+        Args: { ad_id_input: string; is_active_input: boolean }
         Returns: Json
       }
       update_admin_credentials: {

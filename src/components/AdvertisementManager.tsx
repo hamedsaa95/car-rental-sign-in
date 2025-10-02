@@ -33,9 +33,7 @@ const AdvertisementManager = ({ username }: AdvertisementManagerProps) => {
   const fetchAdvertisements = async () => {
     try {
       const { data, error } = await supabase
-        .from('advertisements')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .rpc('get_all_advertisements_admin');
 
       if (error) throw error;
       setAdvertisements(data || []);
@@ -69,14 +67,19 @@ const AdvertisementManager = ({ username }: AdvertisementManagerProps) => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('advertisements')
-        .insert([{
-          ...formData,
-          created_by: username
-        }]);
+      const { data, error } = await supabase
+        .rpc('add_advertisement_secure', {
+          title_input: formData.title,
+          image_url_input: formData.image_url,
+          created_by_input: username,
+        });
 
       if (error) throw error;
+      
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) {
+        throw new Error(result.error || 'فشل في إضافة الإعلان');
+      }
 
       toast({
         title: "تم الإضافة بنجاح",
@@ -89,7 +92,7 @@ const AdvertisementManager = ({ username }: AdvertisementManagerProps) => {
     } catch (error: any) {
       toast({
         title: "خطأ في الإضافة",
-        description: "حدث خطأ أثناء إضافة الإعلان",
+        description: error.message || "حدث خطأ أثناء إضافة الإعلان",
         variant: "destructive"
       });
     } finally {
@@ -99,12 +102,18 @@ const AdvertisementManager = ({ username }: AdvertisementManagerProps) => {
 
   const toggleAdStatus = async (id: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
-        .from('advertisements')
-        .update({ is_active: !currentStatus })
-        .eq('id', id);
+      const { data, error } = await supabase
+        .rpc('toggle_advertisement_secure', {
+          ad_id_input: id,
+          is_active_input: !currentStatus,
+        });
 
       if (error) throw error;
+      
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) {
+        throw new Error(result.error || 'فشل في تحديث حالة الإعلان');
+      }
 
       toast({
         title: "تم التحديث",
@@ -112,10 +121,10 @@ const AdvertisementManager = ({ username }: AdvertisementManagerProps) => {
       });
 
       fetchAdvertisements();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "خطأ في التحديث",
-        description: "حدث خطأ أثناء تحديث حالة الإعلان",
+        description: error.message || "حدث خطأ أثناء تحديث حالة الإعلان",
         variant: "destructive"
       });
     }
@@ -125,12 +134,17 @@ const AdvertisementManager = ({ username }: AdvertisementManagerProps) => {
     if (!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
 
     try {
-      const { error } = await supabase
-        .from('advertisements')
-        .delete()
-        .eq('id', id);
+      const { data, error } = await supabase
+        .rpc('delete_advertisement_secure', {
+          ad_id_input: id,
+        });
 
       if (error) throw error;
+      
+      const result = data as { success: boolean; error?: string };
+      if (!result.success) {
+        throw new Error(result.error || 'فشل في حذف الإعلان');
+      }
 
       toast({
         title: "تم الحذف",
@@ -138,10 +152,10 @@ const AdvertisementManager = ({ username }: AdvertisementManagerProps) => {
       });
 
       fetchAdvertisements();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "خطأ في الحذف",
-        description: "حدث خطأ أثناء حذف الإعلان",
+        description: error.message || "حدث خطأ أثناء حذف الإعلان",
         variant: "destructive"
       });
     }
