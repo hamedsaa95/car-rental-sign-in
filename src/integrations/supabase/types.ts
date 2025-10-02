@@ -321,6 +321,10 @@ export type Database = {
         Args: { ad_id_input: string }
         Returns: Json
       }
+      delete_guest_support_message_secure: {
+        Args: { message_id_input: string }
+        Returns: Json
+      }
       delete_user_admin: {
         Args: { user_id_input: string }
         Returns: Json
@@ -362,6 +366,19 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_guest_support_messages_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          phone: string
+          status: string
+          updated_at: string
+        }[]
+      }
       get_user_for_auth: {
         Args: { username_input: string }
         Returns: {
@@ -398,6 +415,10 @@ export type Database = {
           new_password: string
           new_username: string
         }
+        Returns: Json
+      }
+      update_guest_support_status_secure: {
+        Args: { message_id_input: string; new_status_input: string }
         Returns: Json
       }
       update_user_searches_admin: {

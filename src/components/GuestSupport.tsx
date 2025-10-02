@@ -8,6 +8,28 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { MessageCircle, Phone, Mail, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+// Input validation schema
+const guestSupportSchema = z.object({
+  name: z.string()
+    .trim()
+    .min(1, { message: "الاسم مطلوب" })
+    .max(100, { message: "الاسم يجب أن يكون أقل من 100 حرف" }),
+  email: z.string()
+    .trim()
+    .email({ message: "البريد الإلكتروني غير صالح" })
+    .max(255, { message: "البريد الإلكتروني طويل جداً" }),
+  phone: z.string()
+    .trim()
+    .max(20, { message: "رقم الهاتف طويل جداً" })
+    .optional()
+    .or(z.literal("")),
+  message: z.string()
+    .trim()
+    .min(1, { message: "الرسالة مطلوبة" })
+    .max(2000, { message: "الرسالة يجب أن تكون أقل من 2000 حرف" })
+});
 
 const GuestSupport = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,10 +52,14 @@ const GuestSupport = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
+    // Validate input data
+    const validationResult = guestSupportSchema.safeParse(formData);
+    
+    if (!validationResult.success) {
+      const firstError = validationResult.error.errors[0];
       toast({
-        title: "خطأ",
-        description: "يرجى ملء الحقول المطلوبة",
+        title: "خطأ في البيانات",
+        description: firstError.message,
         variant: "destructive"
       });
       return;
@@ -41,9 +67,17 @@ const GuestSupport = () => {
 
     setIsLoading(true);
     try {
+      // Use validated data
+      const sanitizedData = {
+        name: validationResult.data.name,
+        email: validationResult.data.email.toLowerCase(),
+        phone: validationResult.data.phone || null,
+        message: validationResult.data.message
+      };
+
       const { error } = await supabase
         .from('guest_support_messages')
-        .insert([formData]);
+        .insert([sanitizedData]);
 
       if (error) throw error;
 
