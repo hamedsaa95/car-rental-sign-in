@@ -47,9 +47,9 @@ export type Database = {
         }
         Insert: {
           id?: string
-          password?: string
+          password: string
           updated_at?: string
-          username?: string
+          username: string
         }
         Update: {
           id?: string
