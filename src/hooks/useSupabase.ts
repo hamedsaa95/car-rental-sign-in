@@ -31,9 +31,9 @@ export const useSupabase = () => {
     console.log('Attempting login for:', username);
     try {
       if (username === 'admin') {
-        // استخدام دالة التحقق المبسطة للمدير
+        // استخدام دالة التحقق الآمنة للمدير
         const { data: adminResult, error: adminError } = await (supabase as any)
-          .rpc('authenticate_admin_simple', {
+          .rpc('authenticate_admin_secure', {
             username_input: username,
             password_input: password
           });
@@ -52,9 +52,9 @@ export const useSupabase = () => {
           throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
         }
       } else {
-        // استخدام دالة التحقق المبسطة للمستخدمين العاديين
+        // استخدام دالة التحقق الآمنة للمستخدمين العاديين
         const { data: userResult, error: userError } = await (supabase as any)
-          .rpc('authenticate_user_simple', {
+          .rpc('authenticate_user_secure', {
             username_input: username,
             password_input: password
           });
@@ -307,7 +307,7 @@ export const useSupabase = () => {
     try {
       // التحقق من بيانات المدير الحالية أولاً
       const { data: verifyResult, error: verifyError } = await (supabase as any)
-        .rpc('authenticate_admin_simple', {
+        .rpc('authenticate_admin_secure', {
           username_input: currentUsername,
           password_input: currentPassword
         });
@@ -316,17 +316,17 @@ export const useSupabase = () => {
         throw new Error('بيانات المدير الحالية غير صحيحة');
       }
 
-      // تحديث بيانات المدير
-      const { error: updateError } = await supabase
-        .from('admin_settings')
-        .update({
-          username: newUsername,
-          password: newPassword
-        })
-        .eq('username', currentUsername);
+      // تحديث بيانات المدير باستخدام دالة آمنة
+      const { data: updateResult, error: updateError } = await (supabase as any)
+        .rpc('update_admin_credentials', {
+          current_username: currentUsername,
+          current_password: currentPassword,
+          new_username: newUsername,
+          new_password: newPassword
+        });
       
-      if (updateError) {
-        throw new Error('فشل في تحديث بيانات المدير');
+      if (updateError || !updateResult?.success) {
+        throw new Error(updateResult?.error || 'فشل في تحديث بيانات المدير');
       }
       
       toast({

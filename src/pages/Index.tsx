@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import LoginForm from "@/components/LoginForm";
 import AdminDashboard from "@/components/AdminDashboard";
 import UserDashboard from "@/components/UserDashboard";
@@ -6,7 +6,6 @@ import { useAuth } from "@/hooks/useAuth";
 import NavigationBar from "@/components/NavigationBar";
 import GuidesPage from "./GuidesPage";
 import AdminSettingsPage from "./AdminSettingsPage";
-import { initializeData } from "@/lib/initData";
 
 export interface User {
   id?: string;
@@ -21,11 +20,6 @@ export interface User {
 const Index = () => {
   const { user, isLoading, login, logout, updateUser } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
-
-  // تهيئة البيانات الأولية
-  useEffect(() => {
-    initializeData();
-  }, []);
 
   const handleLogin = (userData: User) => {
     login(userData);
