@@ -12,6 +12,7 @@ import { useSupabase } from "@/hooks/useSupabase";
 
 interface BlockedUser {
   id: string;
+  user_id: string;
   name: string;
   reason: string;
 }
@@ -181,7 +182,7 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
       if (result === "not_found") {
         message = `نتيجة البحث: غير مستدل\nالرقم التعريفي: ${searchId}\nالبحث تم في: ${new Date().toLocaleString('ar-SA')}`;
       } else {
-        message = `نتيجة البحث: تم العثور على المستخدم\nالاسم: ${result.name}\nالسبب: ${result.reason}\nالبحث تم في: ${new Date().toLocaleString('ar-SA')}`;
+        message = `نتيجة البحث: تم العثور على المستخدم\nالاسم: ${result.name}\nالرقم التعريفي: ${result.user_id}\nالسبب: ${result.reason}\nالبحث تم في: ${new Date().toLocaleString('ar-SA')}`;
       }
       
       const encodedMessage = encodeURIComponent(message);
@@ -231,7 +232,8 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
       
       if (found) {
         result = {
-          id: found.user_id,
+          id: found.id,
+          user_id: found.user_id,
           name: found.name,
           reason: found.reason
         };
