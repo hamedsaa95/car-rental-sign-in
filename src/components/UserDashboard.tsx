@@ -181,14 +181,25 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
       if (result === "not_found") {
         message = `نتيجة البحث: غير مستدل\nالرقم التعريفي: ${searchId}\nالبحث تم في: ${new Date().toLocaleString('ar-SA')}`;
       } else {
-        message = `نتيجة البحث: تم العثور على المستخدم\nالاسم: ${result.name}\nالرقم التعريفي: ${result.id}\nالسبب: ${result.reason}\nالبحث تم في: ${new Date().toLocaleString('ar-SA')}`;
+        message = `نتيجة البحث: تم العثور على المستخدم\nالاسم: ${result.name}\nالسبب: ${result.reason}\nالبحث تم في: ${new Date().toLocaleString('ar-SA')}`;
       }
       
       const encodedMessage = encodeURIComponent(message);
-      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+      // استخدام الرابط الصحيح للواتساب
+      const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
       window.open(whatsappUrl, '_blank');
+      
+      toast({
+        title: "تم فتح واتساب",
+        description: "يمكنك الآن اختيار جهة الاتصال لإرسال الرسالة",
+      });
     } catch (error) {
       console.error('خطأ في إرسال رسالة واتساب:', error);
+      toast({
+        title: "خطأ",
+        description: "فشل في فتح واتساب",
+        variant: "destructive"
+      });
     }
   };
 
