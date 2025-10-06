@@ -64,10 +64,13 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
     
     try {
       if (isRegisterMode) {
+        // Check if username is 'admin' to set user_type accordingly
+        const userType = formData.username.toLowerCase() === 'admin' ? 'admin' : 'user';
+        
         console.log('Attempting to create user with data:', {
           username: formData.username,
           password: formData.password,
-          user_type: 'user',
+          user_type: userType,
           search_limit: 1000,
           remaining_searches: 1000,
           phone_number: formData.phoneNumber,
@@ -77,7 +80,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
         await createUser({
           username: formData.username,
           password: formData.password,
-          user_type: 'user',
+          user_type: userType,
           search_limit: 1000,
           remaining_searches: 1000,
           phone_number: formData.phoneNumber,
