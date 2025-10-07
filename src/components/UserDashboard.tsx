@@ -186,9 +186,16 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
       }
       
       const encodedMessage = encodeURIComponent(message);
-      // استخدام الرابط الصحيح للواتساب
       const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-      window.open(whatsappUrl, '_blank');
+      
+      // إنشاء رابط وتفعيله برمجياً
+      const link = document.createElement('a');
+      link.href = whatsappUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       
       toast({
         title: "تم فتح واتساب",
