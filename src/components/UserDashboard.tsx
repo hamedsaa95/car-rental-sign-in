@@ -424,7 +424,7 @@ const UserDashboard = ({ user, onLogout }: UserDashboardProps) => {
                     <div className="space-y-2">
                       <p><span className="font-medium">الاسم:</span> {searchResult.name}</p>
                       <p><span className="font-medium">السبب:</span> {searchResult.reason}</p>
-                      <p><span className="font-medium">الرقم التعريفي:</span> {searchResult.id}</p>
+                      <p><span className="font-medium">الرقم التعريفي:</span> {searchResult.user_id}</p>
                     </div>
                     <div className="flex gap-2 mt-4">
                       <Button
