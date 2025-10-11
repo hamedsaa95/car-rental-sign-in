@@ -265,7 +265,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      users_safe_view: {
+        Row: {
+          company_name: string | null
+          created_at: string | null
+          id: string | null
+          phone_number: string | null
+          remaining_searches: number | null
+          search_limit: number | null
+          updated_at: string | null
+          user_type: string | null
+          username: string | null
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          phone_number?: string | null
+          remaining_searches?: number | null
+          search_limit?: number | null
+          updated_at?: string | null
+          user_type?: string | null
+          username?: string | null
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string | null
+          id?: string | null
+          phone_number?: string | null
+          remaining_searches?: number | null
+          search_limit?: number | null
+          updated_at?: string | null
+          user_type?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_advertisement_secure: {
@@ -297,11 +332,11 @@ export type Database = {
         Args: { password_input: string; username_input: string }
         Returns: Json
       }
-      authenticate_user_secure: {
+      authenticate_user_safe: {
         Args: { password_input: string; username_input: string }
         Returns: Json
       }
-      authenticate_user_simple: {
+      authenticate_user_secure: {
         Args: { password_input: string; username_input: string }
         Returns: Json
       }
@@ -379,18 +414,9 @@ export type Database = {
           updated_at: string
         }[]
       }
-      get_user_for_auth: {
-        Args: { username_input: string }
-        Returns: {
-          company_name: string
-          id: string
-          password: string
-          phone_number: string
-          remaining_searches: number
-          search_limit: number
-          user_type: string
-          username: string
-        }[]
+      get_user_info_safe: {
+        Args: { user_id_input: string }
+        Returns: Json
       }
       hash_password: {
         Args: { password: string }
