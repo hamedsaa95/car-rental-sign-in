@@ -265,42 +265,7 @@ export type Database = {
       }
     }
     Views: {
-      users_safe_view: {
-        Row: {
-          company_name: string | null
-          created_at: string | null
-          id: string | null
-          phone_number: string | null
-          remaining_searches: number | null
-          search_limit: number | null
-          updated_at: string | null
-          user_type: string | null
-          username: string | null
-        }
-        Insert: {
-          company_name?: string | null
-          created_at?: string | null
-          id?: string | null
-          phone_number?: string | null
-          remaining_searches?: number | null
-          search_limit?: number | null
-          updated_at?: string | null
-          user_type?: string | null
-          username?: string | null
-        }
-        Update: {
-          company_name?: string | null
-          created_at?: string | null
-          id?: string | null
-          phone_number?: string | null
-          remaining_searches?: number | null
-          search_limit?: number | null
-          updated_at?: string | null
-          user_type?: string | null
-          username?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       add_advertisement_secure: {
@@ -418,6 +383,20 @@ export type Database = {
         Args: { user_id_input: string }
         Returns: Json
       }
+      get_users_safe: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          company_name: string
+          created_at: string
+          id: string
+          phone_number: string
+          remaining_searches: number
+          search_limit: number
+          updated_at: string
+          user_type: string
+          username: string
+        }[]
+      }
       hash_password: {
         Args: { password: string }
         Returns: string
@@ -444,6 +423,10 @@ export type Database = {
         Returns: Json
       }
       update_guest_support_status_secure: {
+        Args: { message_id_input: string; new_status_input: string }
+        Returns: Json
+      }
+      update_support_message_status: {
         Args: { message_id_input: string; new_status_input: string }
         Returns: Json
       }

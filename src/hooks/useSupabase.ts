@@ -5,7 +5,6 @@ import { useToast } from '@/hooks/use-toast'
 export interface User {
   id?: string
   username: string
-  password: string
   user_type: 'admin' | 'user'
   search_limit?: number
   remaining_searches?: number
@@ -54,7 +53,7 @@ export const useSupabase = () => {
       } else {
         // استخدام دالة التحقق الآمنة للمستخدمين العاديين
         const { data: userResult, error: userError } = await (supabase as any)
-          .rpc('authenticate_user_secure', {
+          .rpc('authenticate_user_safe', {
             username_input: username,
             password_input: password
           });
@@ -80,7 +79,7 @@ export const useSupabase = () => {
   }
 
   // إنشاء مستخدم جديد
-  const createUser = async (userData: Omit<User, 'id' | 'created_at'>) => {
+  const createUser = async (userData: { username: string; password: string; user_type: 'admin' | 'user'; search_limit?: number; remaining_searches?: number; phone_number?: string; company_name?: string }) => {
     try {
       // استخدام دالة آمنة لإنشاء المستخدم
       const { data: result, error } = await (supabase as any)
