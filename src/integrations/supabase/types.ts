@@ -366,6 +366,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_current_user_info: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_guest_support_messages_admin: {
         Args: Record<PropertyKey, never>
         Returns: {
